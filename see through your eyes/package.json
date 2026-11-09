@@ -1,0 +1,7 @@
+{
+  "name": "see-through-your-eyes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Research-informed animal vision field guide with GPT-generated imagery",
+  "scripts": { "start": "node server.cjs", "check": "node --check app.js && node --check species.js && node --check server.cjs && node verify.cjs" }
+}
