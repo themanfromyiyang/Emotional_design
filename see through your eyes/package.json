@@ -1,7 +1,8 @@
 {
   "name": "see-through-your-eyes",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Research-informed animal vision field guide with GPT-generated imagery",
-  "scripts": { "start": "node server.cjs", "check": "node --check app.js && node --check species.js && node --check server.cjs && node verify.cjs" }
+  "description": "Search animals, retrieve visual research, and generate an interpretation from your own image",
+  "engines": { "node": ">=22" },
+  "scripts": { "start": "node server.cjs", "check": "node --check app.js && node --check server.cjs && node --check research.cjs && node --check inaturalist.cjs && node verify.cjs && node --test app.test.cjs", "test:live": "node verify-live.cjs" }
 }

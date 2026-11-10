@@ -1,0 +1,7 @@
+.cache/
+.env
+.env.*
+!.env.example
+
+server-output.log
+server-error.log
