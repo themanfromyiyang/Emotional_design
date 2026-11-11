@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
@@ -9,14 +9,15 @@
   <meta name="description" content="转动地球，探索附近的动物和地点；进入有来源的物种视觉报告与交互模拟。">
   <title>地球探索｜万物视野 · See Through Your Eyes</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='19' fill='%232b4435'/%3E%3Cellipse cx='20' cy='20' rx='14' ry='8' fill='none' stroke='%23f4f2e9'/%3E%3Ccircle cx='20' cy='20' r='5' fill='%23f4f2e9'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="atlas.css?v=20261111-formal">
+  <link rel="stylesheet" href="atlas.css?v=20261112-index">
   <link rel="stylesheet" href="settings.css?v=2">
   <script src="assets/vendor/d3.min.js" defer></script>
   <script src="assets/vendor/topojson-client.min.js" defer></script>
   <script src="api-client.js?v=20261109-4" defer></script>
-  <script src="settings.js?v=4" defer></script>
+  <script src="settings.js?v=6" defer></script>
   <script src="place-name.js?v=1" defer></script>
-  <script src="atlas.js?v=20261111-place-names" defer></script>
+  <script src="atlas.js?v=20261112-index" defer></script>
+  <script src="index-research.js?v=1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳至地球探索</a>
@@ -27,11 +28,12 @@
     </a>
     <nav aria-label="主导航">
       <a href="/" aria-current="page">地球探索</a>
-      <a href="research.html">物种视觉研究 ↗</a>
+      <a href="#research" id="nav-research">物种视觉研究 ↗</a>
       <button id="settings-button" type="button">配置生成服务 ↗</button>
     </nav>
   </header>
   <main id="main">
+    <section id="atlas-home" aria-label="地球探索">
     <form id="search-form" action="research.html" method="get" role="search" class="search-bar">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 6 6"/></svg>
       <label class="sr-only" for="search">搜索动物名称或学名</label>
@@ -78,6 +80,11 @@
         <p class="map-note">地球点纹用于描绘陆地，不代表观察记录。选点后左侧显示实际查询结果。</p>
       </section>
     </div>
+    </section>
+    <section id="index-research" class="index-research" aria-label="物种视觉研究" hidden>
+      <div class="index-research-bar"><button id="close-research" type="button">← 返回地球探索</button><span>物种视觉研究</span><a id="open-research-page" href="research.html" target="_blank" rel="noopener noreferrer">独立打开 ↗</a></div>
+      <iframe id="research-frame" title="物种视觉研究与模拟" loading="lazy"></iframe>
+    </section>
   </main>
   <footer><span>万物视野 · See Through Your Eyes</span><span>物种数据 <a href="https://www.inaturalist.org/" target="_blank" rel="noopener noreferrer">iNaturalist</a> · 地理轮廓 <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener noreferrer">Natural Earth</a> · <a href="https://techdocs.gbif.org/en/openapi/v2/maps" target="_blank" rel="noopener noreferrer">GBIF</a></span></footer>
 </body>

@@ -9,22 +9,23 @@ try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'low
 catch(error){$('world-fallback').hidden=false;canvas.hidden=true;console.warn('WebGL unavailable:',error.message);}
 
 if(renderer){
- // setViewport/setScissor use CSS pixels; a 1:1 drawing buffer avoids partial-frame rendering on scaled displays.
+ // Keep one output pixel per CSS pixel for a predictable panorama viewport.
  renderer.setPixelRatio(1);
  renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.toneMapping=THREE.NoToneMapping;
- const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(75,1,.05,250);
+ const scene=new THREE.Scene(),cubeTarget=new THREE.WebGLCubeRenderTarget(window.matchMedia('(max-width:760px)').matches?512:768,{generateMipmaps:false,minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter}),cubeCamera=new THREE.CubeCamera(.04,250,cubeTarget);
+ scene.add(cubeCamera);
  const sky=new THREE.Color('#a9c9df');scene.background=sky;scene.fog=new THREE.Fog(sky,45,155);
  scene.add(new THREE.HemisphereLight(0xeaf4ff,0x686e53,2));
  const sunlight=new THREE.DirectionalLight(0xffebbf,2.2);sunlight.position.set(-25,40,-30);scene.add(sunlight);
- let environment=new THREE.Group(),sceneTextures=[],spriteMaterials=new Map(),skyTexture=null;scene.add(environment);
+ let environment=new THREE.Group(),sceneTextures=[],spriteMaterials=new Map(),skyDome=null;scene.add(environment);
  const postScene=new THREE.Scene(),postCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
- const postMaterial=new THREE.ShaderMaterial({uniforms:{image:{value:null},saturation:{value:1},contrast:{value:1},brightness:{value:1},gains:{value:new THREE.Vector3(1,1,1)},streakStrength:{value:0}},
+ const postMaterial=new THREE.ShaderMaterial({uniforms:{environmentMap:{value:cubeTarget.texture},horizontalFov:{value:Math.PI},yaw:{value:0},pitch:{value:0},verticalScale:{value:1.53},saturation:{value:1},contrast:{value:1},brightness:{value:1},gains:{value:new THREE.Vector3(1,1,1)},streakStrength:{value:0}},
   vertexShader:'varying vec2 uvPoint; void main(){uvPoint=uv;gl_Position=vec4(position.xy,0.0,1.0);}',
-  fragmentShader:'uniform sampler2D image;uniform float saturation;uniform float contrast;uniform float brightness;uniform float streakStrength;uniform vec3 gains;varying vec2 uvPoint;void main(){vec4 pixel=texture2D(image,uvPoint);float peripheral=smoothstep(0.13,0.45,abs(uvPoint.y-0.5))*streakStrength;vec3 soft=(texture2D(image,uvPoint+vec2(0.004,0.0)).rgb+texture2D(image,uvPoint-vec2(0.004,0.0)).rgb+texture2D(image,uvPoint+vec2(0.0,0.004)).rgb+texture2D(image,uvPoint-vec2(0.0,0.004)).rgb)*0.25;vec3 c=mix(pixel.rgb,soft,peripheral)*gains;float gray=dot(c,vec3(0.2126,0.7152,0.0722));c=mix(vec3(gray),c,saturation);c=(c-0.5)*contrast+0.5;c*=brightness;gl_FragColor=vec4(clamp(c,0.0,1.0),1.0);\n#include <colorspace_fragment>\n}'
+  fragmentShader:'uniform samplerCube environmentMap;uniform float horizontalFov;uniform float yaw;uniform float pitch;uniform float verticalScale;uniform float saturation;uniform float contrast;uniform float brightness;uniform float streakStrength;uniform vec3 gains;varying vec2 uvPoint;vec3 directionFor(vec2 p){float azimuth=(p.x-.5)*horizontalFov+yaw;float elevation=atan((p.y-.5)*verticalScale)+pitch;return vec3(sin(azimuth)*cos(elevation),sin(elevation),-cos(azimuth)*cos(elevation));}vec3 sampleWorld(vec2 p){return textureCube(environmentMap,directionFor(p)).rgb;}void main(){vec3 pixel=sampleWorld(uvPoint);float peripheral=smoothstep(0.13,0.45,abs(uvPoint.y-0.5))*streakStrength;vec3 soft=(sampleWorld(uvPoint+vec2(0.004,0.0))+sampleWorld(uvPoint-vec2(0.004,0.0))+sampleWorld(uvPoint+vec2(0.0,0.004))+sampleWorld(uvPoint-vec2(0.0,0.004)))*0.25;vec3 c=mix(pixel,soft,peripheral)*gains;float gray=dot(c,vec3(0.2126,0.7152,0.0722));c=mix(vec3(gray),c,saturation);c=(c-0.5)*contrast+0.5;c*=brightness;gl_FragColor=vec4(clamp(c,0.0,1.0),1.0);\n#include <colorspace_fragment>\n}'
  });
  postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),postMaterial));
- const targets=[];let yaw=0,pitch=-.03,scheduled=false,biome='grassland',appearance=neutral,habitat=null,viewEvidence=null,streakEvidence=null,hasColorEvidence=false,environmentReady=false,worldPlan=null,researchId=null,worldVersion=0,treeSprites=[],flowerSprites=[],shrubSprites=[];
+ let yaw=0,pitch=-.03,scheduled=false,biome='grassland',appearance=neutral,habitat=null,viewEvidence=null,streakEvidence=null,hasColorEvidence=false,environmentReady=false,worldPlan=null,habitatBasis=null,researchId=null,worldVersion=0,treeSprites=[],flowerSprites=[],shrubSprites=[],capturedPosition=null;
  const fixedAngle=()=>Math.round(THREE.MathUtils.clamp(viewEvidence?.horizontalDegrees||100,40,360));
  const position={x:0,z:0};
  let randomSeed=47;
@@ -35,7 +36,7 @@ if(renderer){
  function spriteTexture(width,height,draw){const surface=document.createElement('canvas');surface.width=width;surface.height=height;const context=surface.getContext('2d');draw(context,width,height);const texture=new THREE.CanvasTexture(surface);texture.colorSpace=THREE.SRGBColorSpace;texture.anisotropy=Math.min(renderer.capabilities.getMaxAnisotropy(),4);sceneTextures.push(texture);return texture;}
  function botanicalSprite(texture,x,y,z,width,height){if(!spriteMaterials.has(texture))spriteMaterials.set(texture,new THREE.SpriteMaterial({map:texture,transparent:true,alphaTest:.08,depthWrite:false}));const sprite=new THREE.Sprite(spriteMaterials.get(texture));sprite.position.set(x,y+height/2,z);sprite.scale.set(width,height,1);environment.add(sprite);return sprite;}
  function plantShadow(x,z,width,opacity=.18){const shadow=add(new THREE.CircleGeometry(width,20),new THREE.MeshBasicMaterial({color:'#243027',transparent:true,opacity,depthWrite:false}),x,surfaceHeight(x,z)+.02,z);shadow.rotation.x=-Math.PI/2;shadow.scale.y=.45;}
- function makeSky(color){if(skyTexture)skyTexture.dispose();const surface=document.createElement('canvas');surface.width=4;surface.height=512;const context=surface.getContext('2d'),gradient=context.createLinearGradient(0,0,0,512);gradient.addColorStop(0,tone(color,-.12));gradient.addColorStop(.55,color);gradient.addColorStop(1,tone(color,.28));context.fillStyle=gradient;context.fillRect(0,0,4,512);skyTexture=new THREE.CanvasTexture(surface);skyTexture.colorSpace=THREE.SRGBColorSpace;scene.background=skyTexture;}
+ function makeSky(color){scene.background=sky;const material=new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{top:{value:new THREE.Color(tone(color,-.08))},horizon:{value:new THREE.Color(tone(color,.22))}},vertexShader:'varying float elevation;void main(){elevation=normalize(position).y;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',fragmentShader:'uniform vec3 top;uniform vec3 horizon;varying float elevation;void main(){gl_FragColor=vec4(mix(horizon,top,smoothstep(-0.12,0.78,elevation)),1.0);\n#include <colorspace_fragment>\n}'});skyDome=add(new THREE.SphereGeometry(180,32,16),material,0,0,0);}
  function treeTextures(form){const textures=[];for(let variant=0;variant<5;variant++)textures.push(spriteTexture(256,320,(g,w,h)=>{const dark=tone(worldPlan.plantColor,-.055),mid=variant%2?worldPlan.plantAccentColor:worldPlan.plantColor,light=tone(mid,.13);g.lineCap='round';g.lineJoin='round';g.strokeStyle='#665343';g.lineWidth=form==='sparse'?8:13;g.beginPath();g.moveTo(128,315);g.bezierCurveTo(126,235,118,172,126,112);g.stroke();const leaf=(x,y,rx,ry,angle,color)=>{g.save();g.translate(x,y);g.rotate(angle);g.fillStyle=color;g.beginPath();g.ellipse(0,0,rx,ry,0,0,Math.PI*2);g.fill();g.restore();};
   if(form==='palm'){for(let i=0;i<9;i++){const angle=-Math.PI+i*Math.PI/8,reach=68+(i%3)*12,x=128+Math.cos(angle)*reach,y=105+Math.sin(angle)*38;g.strokeStyle='#735a3f';g.lineWidth=4;g.beginPath();g.moveTo(128,105);g.quadraticCurveTo(128+Math.cos(angle)*reach*.6,65+Math.sin(angle)*25,x,y);g.stroke();for(let k=1;k<=10;k++){const t=k/11,cx=128+(x-128)*t,cy=105+(y-105)*t-18*Math.sin(Math.PI*t);leaf(cx,cy+7,6,16,angle+.5,k%3?mid:light);leaf(cx,cy-7,6,16,angle-.5,k%3?dark:mid);}}return;}
   if(form==='conifer'){for(let layer=0;layer<5;layer++){const top=34+layer*40,half=29+layer*13;g.fillStyle=layer%2?mid:dark;g.beginPath();g.moveTo(128,top);g.lineTo(128-half,top+84);g.quadraticCurveTo(128,top+68,128+half,top+84);g.closePath();g.fill();for(let k=0;k<22;k++)leaf(128+(rand()-.5)*half*1.45,top+20+rand()*45,3+rand()*5,9+rand()*7,(rand()-.5),k%3?mid:light);}return;}
@@ -44,7 +45,7 @@ if(renderer){
  function shrubTextures(){return Array.from({length:4},(_,variant)=>spriteTexture(160,110,g=>{const base=variant%2?worldPlan.plantAccentColor:worldPlan.plantColor;g.strokeStyle=tone(base,-.2);g.lineWidth=4;for(let i=0;i<10;i++){const x=80+(rand()-.5)*120,y=38+rand()*42;g.beginPath();g.moveTo(80,108);g.quadraticCurveTo(x,75,x,y);g.stroke();for(let j=0;j<9;j++){const lx=x+(rand()-.5)*33,ly=y+(rand()-.5)*25;g.fillStyle=j%4===0?tone(base,.13):j%3===0?tone(base,-.06):base;g.beginPath();g.ellipse(lx,ly,4+rand()*7,3+rand()*5,(rand()-.5)*2,0,Math.PI*2);g.fill();}}}));}
  const terrainHeight=(x,z)=>{const relief=worldPlan?.terrain==='flat'?.25:worldPlan?.terrain==='rocky'?1.6:1;return relief*(Math.sin(x*.045)*1.1+Math.cos(z*.057)*.75+Math.sin((x+z)*.03)*.5+Math.sin(x*.21+z*.17)*.16+Math.cos(z*.29-x*.11)*.12);};
  const surfaceHeight=(x,z)=>biome==='marine'?-2+terrainHeight(x,z)*.28:worldPlan?.water!=='none'?terrainHeight(x,z)*.48-.2:terrainHeight(x,z);
- function clearEnvironment(){scene.remove(environment);const geometries=new Set(),materials=new Set();environment.traverse(object=>{if(object.isMesh&&object.geometry)geometries.add(object.geometry);if((object.isMesh||object.isSprite)&&object.material)materials.add(object.material);});geometries.forEach(geometry=>geometry.dispose());materials.forEach(material=>material.dispose());sceneTextures.forEach(texture=>texture.dispose());sceneTextures=[];spriteMaterials=new Map();environment=new THREE.Group();scene.add(environment);}
+ function clearEnvironment(){scene.remove(environment);const geometries=new Set(),materials=new Set();environment.traverse(object=>{if(object.isMesh&&object.geometry)geometries.add(object.geometry);if((object.isMesh||object.isSprite)&&object.material)materials.add(object.material);});geometries.forEach(geometry=>geometry.dispose());materials.forEach(material=>material.dispose());sceneTextures.forEach(texture=>texture.dispose());sceneTextures=[];spriteMaterials=new Map();skyDome=null;capturedPosition=null;environment=new THREE.Group();scene.add(environment);}
  function makeTerrain(kind){
   const wet=worldPlan.water!=='none',groundColor=worldPlan.groundColor;
   const geometry=new THREE.PlaneGeometry(220,220,100,100);geometry.rotateX(-Math.PI/2);
@@ -79,31 +80,26 @@ if(renderer){
  }
  function showReferences(photos){const container=$('world-photo-references');container.replaceChildren();container.hidden=!photos?.length;if(!photos?.length)return;const heading=document.createElement('h3');heading.textContent='环境参考照片';container.append(heading);const grid=document.createElement('div');grid.className='world-photo-grid';for(const photo of photos){const item=document.createElement('a');item.href=photo.url;item.target='_blank';item.rel='noopener noreferrer';const picture=document.createElement('img');picture.src=photo.imageUrl;picture.alt=photo.title;picture.loading='lazy';const caption=document.createElement('span');caption.textContent=`${photo.title} · ${photo.artist||'作者见原页'} · ${photo.license}`;item.append(picture,caption);grid.append(item);}container.append(grid);}
  function updateNotes(){
-  $('world-habitat-note').textContent=habitat&&habitat.biome===biome?`栖息地：${habitat.description}（${habitat.measuredSpecies}，${habitat.level==='direct'?'本物种':habitat.level==='genus'?'同属近亲':habitat.level==='family'?'同科近亲':'同目近亲'}；来源 ${habitat.sourceIds.join('、')}）${worldPlan?` 场景布置：${worldPlan.sceneDescription} 视点高度约 ${worldPlan.viewpointHeight} 米，仅为物种体型与姿态的场景示意。`:''}`:'尚无可核验的栖息地环境说明。';
+  $('world-habitat-note').textContent=habitat&&habitat.biome===biome?`栖息地：${habitat.description}（${habitat.measuredSpecies}，${habitat.level==='direct'?'本物种':habitat.level==='genus'?'同属近亲':habitat.level==='family'?'同科近亲':'同目近亲'}；来源 ${habitat.sourceIds.join('、')}）${worldPlan?` 场景布置：${worldPlan.sceneDescription} 视点高度约 ${worldPlan.viewpointHeight} 米，仅为物种体型与姿态的场景示意。`:''}`:worldPlan&&habitatBasis==='photos-only'?`缺少可核验的本物种栖息地描述。此环境依据下方生活环境参考照片生成：${worldPlan.sceneDescription} 视点高度约 ${worldPlan.viewpointHeight} 米，为场景示意。`:'尚无可核验的本物种栖息地环境说明；生成环境时会检索生活环境照片作为参考。';
   $('world-appearance-note').textContent=(hasColorEvidence?`视觉色彩依据：${appearance.measuredSpecies}（${appearance.level==='direct'?'本物种':appearance.level==='genus'?'同属近亲':appearance.level==='family'?'同科近亲':'同目近亲'}）。${appearance.explanation}（来源 ${appearance.sourceIds.join('、')}；按物种报告固定应用，属于近似模拟）`:'没有可转换为 3D 色彩参数的证据，场景保持中性色彩。')+(streakEvidence?` 横向清晰带：${streakEvidence.explanation}（${streakEvidence.measuredSpecies}；来源 ${streakEvidence.sourceIds.join('、')}）。画面上下柔化仅作示意。`:'');
-  $('world-evidence').textContent=viewEvidence?`研究给出的总水平视野 ${viewEvidence.horizontalDegrees}°（${viewEvidence.measuredSpecies}，${viewEvidence.level==='direct'?'本物种':viewEvidence.level==='genus'?'同属近亲':viewEvidence.level==='family'?'同科近亲':'同目近亲'}；来源 ${viewEvidence.sourceIds.join('、')}）。场景固定采用该角度。`:`总水平视野缺少可核验角度；当前 ${fixedAngle()}° 是交互示意值。`;
+  $('world-evidence').textContent=viewEvidence?`研究给出的总水平视野 ${viewEvidence.horizontalDegrees}°（${viewEvidence.measuredSpecies}，${viewEvidence.level==='direct'?'本物种':viewEvidence.level==='genus'?'同属近亲':viewEvidence.level==='family'?'同科近亲':'同目近亲'}；来源 ${viewEvidence.sourceIds.join('、')}）。场景采用连续水平全景投影。`:`总水平视野缺少可核验角度；当前 ${fixedAngle()}° 是交互示意值，采用连续水平全景投影。`;
  }
  function render(){scheduled=false;const rect=canvas.getBoundingClientRect();if(!environmentReady||!rect.width||!rect.height||$('workspace-view').hidden)return;
-  renderer.setSize(Math.max(1,Math.floor(rect.width)),Math.max(1,Math.floor(rect.height)),false);
   const width=Math.max(1,Math.floor(rect.width)),height=Math.max(1,Math.floor(rect.height)),angle=fixedAngle();
-  const count=Math.max(1,Math.ceil(angle/100)),segment=angle/count;
+  renderer.setSize(width,height,false);
   for(const key of ['saturation','contrast','brightness'])postMaterial.uniforms[key].value=appearance[key];
   postMaterial.uniforms.gains.value.set(...['redGain','greenGain','blueGain'].map(key=>appearance[key]));
   postMaterial.uniforms.streakStrength.value=streakEvidence?.55:0;
-  renderer.setScissorTest(false);renderer.setRenderTarget(null);renderer.setViewport(0,0,width,height);renderer.clear();
-  for(let index=0;index<count;index++){
-   const x=Math.floor(index*width/count),next=Math.floor((index+1)*width/count),panelWidth=next-x;
-   if(!targets[index])targets[index]=new THREE.WebGLRenderTarget(panelWidth,height,{depthBuffer:true});
-   if(targets[index].width!==panelWidth||targets[index].height!==height)targets[index].setSize(panelWidth,height);
-   camera.aspect=panelWidth/height;camera.fov=Math.min(165,2*Math.atan(Math.tan(segment*Math.PI/360)/camera.aspect)*180/Math.PI);camera.updateProjectionMatrix();
-   const heading=yaw+(-angle/2+segment*(index+.5))*Math.PI/180;
-   camera.position.set(position.x,surfaceHeight(position.x,position.z)+(worldPlan.viewpointHeight||1.8),position.z);
-   camera.lookAt(camera.position.x+Math.sin(heading)*Math.cos(pitch),camera.position.y+Math.sin(pitch),camera.position.z-Math.cos(heading)*Math.cos(pitch));
-   renderer.setScissorTest(false);renderer.setRenderTarget(targets[index]);renderer.setViewport(0,0,panelWidth,height);renderer.clear();renderer.render(scene,camera);
-   postMaterial.uniforms.image.value=targets[index].texture;
-   renderer.setRenderTarget(null);renderer.setViewport(x,0,panelWidth,height);renderer.setScissor(x,0,panelWidth,height);renderer.setScissorTest(true);renderer.render(postScene,postCamera);
-  }
+  postMaterial.uniforms.horizontalFov.value=angle*Math.PI/180;
+  postMaterial.uniforms.yaw.value=yaw;
+  postMaterial.uniforms.pitch.value=pitch;
+  const cameraY=surfaceHeight(position.x,position.z)+(worldPlan.viewpointHeight||1.8);
   renderer.setScissorTest(false);
+  if(!capturedPosition||capturedPosition.x!==position.x||capturedPosition.y!==cameraY||capturedPosition.z!==position.z){
+   cubeCamera.position.set(position.x,cameraY,position.z);cubeCamera.updateMatrixWorld();if(skyDome)skyDome.position.copy(cubeCamera.position);
+   cubeCamera.update(renderer,scene);capturedPosition={x:position.x,y:cameraY,z:position.z};
+  }
+  renderer.setRenderTarget(null);renderer.setViewport(0,0,width,height);renderer.clear();renderer.render(postScene,postCamera);
  }
  function schedule(){if(!scheduled){scheduled=true;requestAnimationFrame(render);}}
  updateNotes();
@@ -116,17 +112,17 @@ if(renderer){
  function walk(time){const elapsed=Math.min(.05,(time-lastWalk)/1000||0);lastWalk=time;let forward=0,side=0;if(walking.has('w'))forward++;if(walking.has('s'))forward--;if(walking.has('d'))side++;if(walking.has('a'))side--;if(forward||side){const length=Math.hypot(forward,side),distance=5*elapsed/length;position.x=THREE.MathUtils.clamp(position.x+(Math.sin(yaw)*forward+Math.cos(yaw)*side)*distance,-85,85);position.z=THREE.MathUtils.clamp(position.z+(-Math.cos(yaw)*forward+Math.sin(yaw)*side)*distance,-85,85);schedule();}walkFrame=walking.size?requestAnimationFrame(walk):0;}
  canvas.addEventListener('keydown',event=>{const key=event.key.toLowerCase();const movement={ArrowLeft:[-.12,0],ArrowRight:[.12,0],ArrowUp:[0,.09],ArrowDown:[0,-.09]}[event.key];if(movement){event.preventDefault();yaw+=movement[0];pitch=THREE.MathUtils.clamp(pitch+movement[1],-1.15,1.15);schedule();return;}if('wasd'.includes(key)&&key.length===1){event.preventDefault();walking.add(key);if(!walkFrame){lastWalk=performance.now();walkFrame=requestAnimationFrame(walk);}}});
  canvas.addEventListener('keyup',event=>{walking.delete(event.key.toLowerCase());});canvas.addEventListener('blur',()=>walking.clear());
- window.addEventListener('world-species-change',()=>{worldVersion++;researchId=null;worldPlan=null;habitat=null;viewEvidence=null;streakEvidence=null;appearance=neutral;hasColorEvidence=false;environmentReady=false;walking.clear();clearEnvironment();showReferences([]);canvas.hidden=true;$('world-empty').hidden=false;$('world-empty').textContent='完成有来源的视觉与栖息地研究后，点击按钮生成环境。';$('world-generate').hidden=true;$('world-generate').disabled=false;$('world-generate').textContent='收集栖息地照片并生成环境 ↗';$('world-evidence').textContent='需要先完成视觉与栖息地研究。';$('world-habitat-note').textContent='尚无栖息地研究结果。';$('world-appearance-note').textContent='尚无可用于模拟的视觉报告。';});
- window.addEventListener('world-research-update',event=>{worldVersion++;researchId=event.detail?.id||null;worldPlan=null;environmentReady=false;clearEnvironment();showReferences([]);canvas.hidden=true;$('world-empty').hidden=false;const report=event.detail?.report;if(!report){$('world-generate').hidden=true;$('world-empty').textContent='本次未生成可核验的视觉报告，场景尚未生成。';return;}
+ window.addEventListener('world-species-change',()=>{worldVersion++;researchId=null;worldPlan=null;habitatBasis=null;habitat=null;viewEvidence=null;streakEvidence=null;appearance=neutral;hasColorEvidence=false;environmentReady=false;walking.clear();clearEnvironment();showReferences([]);canvas.hidden=true;$('world-empty').hidden=false;$('world-empty').textContent='完成视觉研究后，点击按钮生成环境。';$('world-generate').hidden=true;$('world-generate').disabled=false;$('world-generate').textContent='收集栖息地照片并生成环境 ↗';$('world-evidence').textContent='需要先完成视觉研究。';$('world-habitat-note').textContent='尚无栖息地研究结果。';$('world-appearance-note').textContent='尚无可用于模拟的视觉报告。';});
+ window.addEventListener('world-research-update',event=>{worldVersion++;researchId=event.detail?.id||null;worldPlan=null;habitatBasis=null;environmentReady=false;clearEnvironment();showReferences([]);canvas.hidden=true;$('world-empty').hidden=false;const report=event.detail?.report;if(!report){$('world-generate').hidden=true;$('world-empty').textContent='本次未生成可核验的视觉报告，场景尚未生成。';return;}
   habitat=report.habitat||null;viewEvidence=report.fieldOfView||null;streakEvidence=report.visualStreak||null;
   appearance=report.worldAppearance||neutral;hasColorEvidence=!!appearance.sourceIds?.length&&Object.keys(neutral).some(key=>appearance[key]!==1);
   const supported=!!viewEvidence||hasColorEvidence||!!streakEvidence;
-  $('world-generate').hidden=!habitat;$('world-generate').disabled=false;$('world-generate').textContent='收集栖息地照片并生成环境 ↗';
-  $('world-empty').textContent=habitat?`栖息地：${habitat.description} 点击上方按钮后才会生成环境。${supported?'':'视觉参数缺少证据，场景将保持中性显示。'}`:'当前报告没有可核验的栖息地描述，无法生成环境。';
+  $('world-generate').hidden=!researchId;$('world-generate').disabled=false;$('world-generate').textContent='收集栖息地照片并生成环境 ↗';
+  $('world-empty').textContent=habitat?`栖息地：${habitat.description} 点击上方按钮后才会生成环境。${supported?'':'视觉参数缺少证据，场景将保持中性显示。'}`:`缺少可核验的本物种栖息地描述。点击上方按钮后，将按本物种生活环境照片生成场景。${supported?'':'视觉参数缺少证据，场景将保持中性显示。'}`;
   updateNotes();
  });
- $('world-generate').addEventListener('click',async()=>{if(!researchId||!habitat||$('world-generate').disabled)return;const token=++worldVersion,id=researchId,button=$('world-generate');button.disabled=true;button.textContent='正在检索照片并生成环境…';$('world-empty').textContent='正在收集栖息地照片，并结合研究规划地形、植被和水域…';
-  try{const result=await window.ApiClient.request('/api/world',{method:'POST',body:JSON.stringify({researchId:id}),signal:AbortSignal.timeout(300000)});if(token!==worldVersion||id!==researchId)return;buildEnvironment(result.plan);showReferences(result.photos);button.textContent='重新生成环境 ↻';updateNotes();}
+ $('world-generate').addEventListener('click',async()=>{if(!researchId||$('world-generate').disabled)return;const token=++worldVersion,id=researchId,button=$('world-generate');button.disabled=true;button.textContent='正在检索照片并生成环境…';$('world-empty').textContent=habitat?'正在收集栖息地照片，并结合研究规划地形、植被和水域…':'正在收集本物种生活环境照片，并据此规划地形、植被和水域…';
+  try{const result=await window.ApiClient.request('/api/world',{method:'POST',body:JSON.stringify({researchId:id}),signal:AbortSignal.timeout(300000)});if(token!==worldVersion||id!==researchId)return;habitatBasis=result.habitatBasis;buildEnvironment(result.plan);showReferences(result.photos);button.textContent='重新生成环境 ↻';updateNotes();}
   catch(error){if(token===worldVersion&&id===researchId)$('world-empty').textContent=error.name==='TimeoutError'?'环境生成超时，请重试。':error.message;}
   finally{if(token===worldVersion&&id===researchId){button.disabled=false;if(!environmentReady)button.textContent='重试生成环境 ↻';}}
  });

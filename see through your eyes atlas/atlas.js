@@ -17,12 +17,12 @@
   $('coordinates').textContent=fmt(selected.lat,selected.lng);$('location-title').textContent=label;
   $('latitude').value=selected.lat.toFixed(4);$('longitude').value=selected.lng.toFixed(4);
   document.querySelectorAll('[data-radius]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.radius)===radius)));
-  const query=new URLSearchParams({lat:selected.lat.toFixed(5),lng:selected.lng.toFixed(5),radius});history.replaceState(null,'','?'+query);
+  const query=new URLSearchParams({lat:selected.lat.toFixed(5),lng:selected.lng.toFixed(5),radius});history.replaceState(null,'','?'+query+location.hash);
   $('observation-link').href='https://www.inaturalist.org/observations?'+new URLSearchParams({lat:selected.lat,lng:selected.lng,radius,taxon_id:1,verifiable:'true',view:'species'});
  }
  function card(t){
   const article=node('article',undefined,'species-card'),link=node('a'),cover=node('div',undefined,'species-image');
-  link.href='research.html#taxon='+t.id;
+  link.href='#taxon='+t.id;
   link.setAttribute('aria-label',(t.commonName||t.name)+'：探索视觉');
   const fallback=()=>{cover.replaceChildren(node('span',t.name.split(' ').map(s=>s[0]).slice(0,2).join(''),'no-image'));};
   if(t.photo){const img=node('img');img.src=t.photo.url;img.alt=t.commonName||t.name;img.loading='lazy';img.referrerPolicy='no-referrer';img.addEventListener('error',fallback,{once:true});cover.append(img);}else fallback();

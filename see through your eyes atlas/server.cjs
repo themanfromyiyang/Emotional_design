@@ -4,10 +4,11 @@ const {createNearby}=require('./nearby.cjs');
 const {createResearch,generateImage,generateWorldPlan}=require('./research.cjs');
 const root=__dirname;
 if(fs.existsSync(path.join(root,'.env')))process.loadEnvFile(path.join(root,'.env'));
-const config={key:process.env.OPENAI_API_KEY||'',researchModel:process.env.OPENAI_RESEARCH_MODEL||'gpt-6.1-sol',imageModel:process.env.OPENAI_IMAGE_MODEL||'gpt-image-2'};
+const config={key:process.env.OPENAI_API_KEY||'',deepseekKey:process.env.DEEPSEEK_API_KEY||'',researchModel:process.env.RESEARCH_MODEL||process.env.OPENAI_RESEARCH_MODEL||'gpt-6.1-sol',imageModel:process.env.OPENAI_IMAGE_MODEL||'gpt-image-2'};
 function saveSettings(file,changes){
  const previous=fs.existsSync(file)?fs.readFileSync(file,'utf8'):fs.readFileSync(path.join(root,'.env.example'),'utf8');
  const names=new Set(Object.keys(changes));
+ if(names.has('RESEARCH_MODEL'))names.add('OPENAI_RESEARCH_MODEL');
  const lines=previous.split(/\r?\n/).filter(line=>!names.has(line.match(/^\s*([A-Z_]+)\s*=/)?.[1]));
  const content=lines.join('\n').trimEnd()+'\n'+Object.entries(changes).map(([name,value])=>name+'='+value).join('\n')+'\n';
  const temporary=file+'.'+require('node:crypto').randomUUID()+'.tmp';
@@ -15,15 +16,16 @@ function saveSettings(file,changes){
 }
 function createApp({catalogue=createClient(),settings=config,nearby=createNearby(),research,generate=generateImage,worldPlan=generateWorldPlan,envPath=path.join(root,'.env')}={}){
  settings={...settings};
- const service=research||createResearch({catalogue,key:()=>settings.key,model:()=>settings.researchModel});let imageBusy=false;
- const allowed=new Set(['original.html','research.html','atlas.js','place-name.js','atlas.css','settings.css','assets/vendor/d3.min.js','assets/vendor/topojson-client.min.js','assets/world-land.json','assets/occurrence-density.json','assets/place-names.json','index.html','style.css','app.js','api-client.js','settings.js','vision-transfer.js','world-simulation.js','node_modules/three/build/three.module.js','node_modules/three/build/three.core.js','bootstrap.js','assets/example-meadow.png','assets/example-garden.svg','assets/journal-birds.png','assets/journal-botanical.png','assets/journal-fern.jpg','assets/naturalist-paper-v1.png','assets/naturalist-paper-v2.png','assets/naturalist-paper-v3.png','assets/naturalist-paper-v4.png']);
+ const researchKey=model=>model.startsWith('deepseek-')?settings.deepseekKey:settings.key;
+ const service=research||createResearch({catalogue,key:model=>researchKey(model),model:()=>settings.researchModel});let imageBusy=false;
+ const allowed=new Set(['original.html','research.html','atlas.js','index-research.js','place-name.js','atlas.css','settings.css','assets/vendor/d3.min.js','assets/vendor/topojson-client.min.js','assets/world-land.json','assets/occurrence-density.json','assets/place-names.json','index.html','style.css','app.js','api-client.js','settings.js','vision-transfer.js','world-simulation.js','node_modules/three/build/three.module.js','node_modules/three/build/three.core.js','bootstrap.js','assets/example-meadow.png','assets/example-garden.svg','assets/journal-birds.png','assets/journal-botanical.png','assets/journal-fern.jpg','assets/naturalist-paper-v1.png','assets/naturalist-paper-v2.png','assets/naturalist-paper-v3.png','assets/naturalist-paper-v4.png']);
  const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.js':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.json':'application/json'};
  const json=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data));};
  async function body(req){if(!req.headers['content-type']?.startsWith('application/json'))throw fail('需要 JSON 请求',415);let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>12*1024*1024)throw fail('上传图片过大',413);chunks.push(chunk);}try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw fail('请求内容无效');}}
  return http.createServer(async(req,res)=>{try{
   const host=req.headers.host||'';if(!/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host))throw fail('仅允许本机访问',403);const url=new URL(req.url,'http://'+host);
   if(req.method==='GET'){
-   if(url.pathname==='/api/status'){res.setHeader('Access-Control-Allow-Origin','*');return json(res,200,{service:'see-through-your-eyes',aiConfigured:!!settings.key,researchModel:settings.researchModel,imageModel:settings.imageModel});}
+   if(url.pathname==='/api/status'){res.setHeader('Access-Control-Allow-Origin','*');return json(res,200,{service:'see-through-your-eyes',aiConfigured:!!researchKey(settings.researchModel),imageConfigured:!!settings.key,researchModel:settings.researchModel,imageModel:settings.imageModel});}
    if(url.pathname==='/api/nearby')return json(res,200,await nearby(Object.fromEntries(url.searchParams)));
    if(url.pathname==='/api/taxa')return json(res,200,await catalogue.search({q:url.searchParams.get('q')||'',group:url.searchParams.get('group')||'',page:Number(url.searchParams.get('page')||1)}));
    if(/^\/api\/taxa\/\d+$/.test(url.pathname))return json(res,200,await catalogue.detail(url.pathname.split('/').pop()));
@@ -37,7 +39,11 @@ function createApp({catalogue=createClient(),settings=config,nearby=createNearby
     if(typeof input.apiKey!=='string'||!/^sk-[A-Za-z0-9_-]{12,509}$/.test(input.apiKey))throw fail('请输入有效格式的 OpenAI API Key',400);
     changes.OPENAI_API_KEY=input.apiKey;
    }
-   for(const [field,name] of [['researchModel','OPENAI_RESEARCH_MODEL'],['imageModel','OPENAI_IMAGE_MODEL']]){
+   if(input.deepseekApiKey!==undefined&&input.deepseekApiKey!==''){
+    if(typeof input.deepseekApiKey!=='string'||!/^[A-Za-z0-9_-]{12,512}$/.test(input.deepseekApiKey))throw fail('请输入有效格式的 DeepSeek API Key',400);
+    changes.DEEPSEEK_API_KEY=input.deepseekApiKey;
+   }
+   for(const [field,name] of [['researchModel','RESEARCH_MODEL'],['imageModel','OPENAI_IMAGE_MODEL']]){
     if(input[field]===undefined)continue;
     if(typeof input[field]!=='string'||!/^[a-z][a-z0-9._-]{1,79}$/.test(input[field]))throw fail('模型名称无效',400);
     changes[name]=input[field];
@@ -45,12 +51,13 @@ function createApp({catalogue=createClient(),settings=config,nearby=createNearby
    if(!Object.keys(changes).length)throw fail('没有要保存的配置',400);
    saveSettings(envPath,changes);
    if(changes.OPENAI_API_KEY)settings.key=changes.OPENAI_API_KEY;
-   if(changes.OPENAI_RESEARCH_MODEL)settings.researchModel=changes.OPENAI_RESEARCH_MODEL;
+   if(changes.DEEPSEEK_API_KEY)settings.deepseekKey=changes.DEEPSEEK_API_KEY;
+   if(changes.RESEARCH_MODEL)settings.researchModel=changes.RESEARCH_MODEL;
    if(changes.OPENAI_IMAGE_MODEL)settings.imageModel=changes.OPENAI_IMAGE_MODEL;
-   return json(res,200,{aiConfigured:!!settings.key,researchModel:settings.researchModel,imageModel:settings.imageModel});
+   return json(res,200,{aiConfigured:!!researchKey(settings.researchModel),imageConfigured:!!settings.key,researchModel:settings.researchModel,imageModel:settings.imageModel});
   }
   if(url.pathname==='/api/research')return json(res,200,await service.run(input.taxonId));
-  if(url.pathname==='/api/world')return json(res,200,await worldPlan(service.get(input.researchId),{key:settings.key,model:settings.researchModel}));
+  if(url.pathname==='/api/world'){const session=service.get(input.researchId),model=session.model||settings.researchModel;return json(res,200,await worldPlan(session,{key:researchKey(model),model}));}
   if(url.pathname==='/api/generate'){
    if(imageBusy)throw fail('已有图像正在生成，请稍候',429);
    const session=service.get(input.researchId);imageBusy=true;
