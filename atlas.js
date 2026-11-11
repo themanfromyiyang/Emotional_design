@@ -25,9 +25,10 @@
   link.href='research.html#taxon='+t.id;
   link.setAttribute('aria-label',(t.commonName||t.name)+'：探索视觉');
   const fallback=()=>{cover.replaceChildren(node('span',t.name.split(' ').map(s=>s[0]).slice(0,2).join(''),'no-image'));};
-  if(t.photo){const img=node('img');img.src=t.photo.url;img.alt=t.commonName||t.name;img.loading='lazy';img.referrerPolicy='no-referrer';img.addEventListener('error',fallback,{once:true});cover.append(img);}else fallback();
+  fallback();
   link.append(cover,node('h3',t.commonName||t.name),node('p',t.name,'latin'),node('p',`${t.localCount.toLocaleString('zh-CN')} 条附近记录`,'count'));article.append(link);
-  if(t.photo){const credit=node('a',t.photo.license.toUpperCase()+' · '+t.photo.attribution,'credit');credit.href=t.photo.source;credit.target='_blank';credit.rel='noopener noreferrer';article.append(credit);}else article.append(node('span','暂无开放许可照片','credit'));
+  const credit=node('div',undefined,'credit');article.append(credit);
+  window.SpeciesPhotos.mount({taxon:t,cover,credit});
   return article;
  }
  async function load(){

@@ -18,12 +18,12 @@
  function placeholder(t){const cover=el('div',undefined,'cover no-photo');cover.append(el('span',t.name.split(' ').slice(0,2).map(w=>w[0]).join(''),'monogram'));return cover;}
  function card(t){
   const article=el('article',undefined,'animal-card'),button=el('button',undefined,'card-open');button.type='button';button.setAttribute('aria-label',`研究${t.commonName||t.name}的视觉`);
-  let cover=t.photo?el('div',undefined,'cover'):placeholder(t);
-  if(t.photo){const img=el('img');img.src=t.photo.url;img.alt=t.commonName||t.name;img.loading='lazy';img.referrerPolicy='no-referrer';img.addEventListener('error',()=>{const fallback=placeholder(t);fallback.append(el('span',groupNames[t.group]||'动物','card-rank'));cover.replaceWith(fallback);cover=fallback;},{once:true});cover.append(img);}
+  const cover=placeholder(t);
   cover.append(el('span',groupNames[t.group]||'动物','card-rank'));
   const text=el('div',undefined,'card-text');text.append(el('h3',t.commonName||t.name),el('p',t.name,'latin'),el('span','↗','card-arrow'));if(t.matchType==='exact')text.append(el('span','名称精确匹配','badge'));
   const bottom=el('div',undefined,'card-bottom');bottom.append(el('span',`${t.observationsCount.toLocaleString('zh-CN')} 条观察`),el('span','探索视觉'));text.append(bottom);button.append(cover,text);button.addEventListener('click',()=>choose(t));article.append(button);
-  if(t.photo){const credit=external(t.photo.source,`${t.photo.license.toUpperCase()} · ${t.photo.attribution}`,'photo-credit');credit.title=t.photo.attribution;article.append(credit);}else article.append(el('span','暂无可显示的开放许可照片','photo-credit'));
+  const credit=el('div',undefined,'photo-credit');article.append(credit);
+  window.SpeciesPhotos.mount({taxon:t,cover,credit});
   return article;
  }
  async function loadCatalogue(){
