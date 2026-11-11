@@ -7,7 +7,7 @@ window.APP_BOOTSTRAP=(async()=>{
   if(!response.ok || !(response.headers.get('content-type')||'').includes('application/json'))return false;
   const status=await response.json();
   if(status.service!=='see-through-your-eyes')return false;
-  const target=new URL('http://127.0.0.1:5181/original.html');
+  const target=new URL('http://127.0.0.1:5181/research.html');
   const input=new URLSearchParams(location.search);
   for(const key of ['q','group'])if(input.has(key))target.searchParams.set(key,input.get(key));
   target.hash=location.hash;

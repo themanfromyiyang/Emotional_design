@@ -14,11 +14,12 @@ function createNearby({fetchImpl=fetch,now=Date.now,spacing=1100}={}){
   if(pending.size>=12)throw fail('查询较多，请稍后重试',429);
   const job=queue.then(async()=>{
    if(next>now())await new Promise(r=>setTimeout(r,next-now()));next=now()+spacing;
-   const params=new URLSearchParams({...point,per_page:24,locale:'zh-CN',verifiable:'true',quality_grade:'research,needs_id'});
+   const params=new URLSearchParams({...point,per_page:24,taxon_id:1,locale:'zh-CN',verifiable:'true',quality_grade:'research,needs_id'});
    const response=await fetchImpl('https://api.inaturalist.org/v1/observations/species_counts?'+params,{headers:{Accept:'application/json','User-Agent':'SeeThroughYourEyes-Atlas/1.0'},signal:AbortSignal.timeout(25000)});
    if(!response.ok)throw fail(response.status===429?'数据源请求较多，请稍后重试':'附近物种数据暂时无法读取，请重试',503);
    const raw=await response.json();if(!Array.isArray(raw.results))throw fail('数据源返回格式异常',502);
-   const results=raw.results.filter(r=>r.taxon?.id).map(r=>({...normalize(r.taxon),localCount:r.count,isAnimal:r.taxon.ancestor_ids?.includes(1)||['Animalia','Mammalia','Aves','Reptilia','Amphibia','Actinopterygii','Mollusca','Insecta','Arachnida'].includes(r.taxon.iconic_taxon_name)}));
+   const animalGroups=new Set(['Animalia','Mammalia','Aves','Reptilia','Amphibia','Actinopterygii','Mollusca','Insecta','Arachnida']);
+   const results=raw.results.filter(r=>r.taxon?.id&&(Array.isArray(r.taxon.ancestor_ids)?r.taxon.ancestor_ids.includes(1):animalGroups.has(r.taxon.iconic_taxon_name))).map(r=>({...normalize(r.taxon),localCount:r.count,isAnimal:true}));
    const missing=results.filter(t=>!t.photo);
    if(missing.length){
     try{

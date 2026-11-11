@@ -26,3 +26,6 @@ body:after{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;opac
 .search-bar .primary{display:flex;align-items:center;justify-content:center;gap:36px;padding:22px 30px;border:1px solid #667a50;border-radius:5px;background:#687e53;color:#fff7df;font-size:26px;white-space:nowrap}
 .search-bar .primary:hover{background:#536c42}.search-bar .primary span{font-size:40px;line-height:1}
 @media(max-width:760px){.search-bar{gap:12px;flex-wrap:wrap;margin-top:0}.search-bar input{flex-basis:calc(100% - 42px);font-size:23px}.search-bar .primary{margin-left:auto;font-size:21px;padding:13px 22px;gap:25px}.search-bar .primary span{font-size:30px}}
+
+.brand small{display:block;font:14px/1.5 Arial,'Microsoft YaHei',sans-serif;letter-spacing:.18em;margin-top:7px;color:#625f48}.topbar nav a[aria-current="page"]{text-decoration:underline;text-underline-offset:7px}.skip-link{position:absolute;left:12px;top:-80px;z-index:20;background:#fff7df;color:#294634;padding:8px 14px}.skip-link:focus{top:12px}footer span:first-child{font-weight:600;color:var(--ink)}
+@media(max-width:760px){.brand small{font-size:11px;margin-top:5px}.topbar nav{flex-wrap:wrap;justify-content:flex-end}.topbar nav button{font-size:inherit}}

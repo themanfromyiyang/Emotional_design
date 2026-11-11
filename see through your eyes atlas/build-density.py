@@ -69,12 +69,12 @@ def points(data, tile):
 if __name__ == '__main__':
     result = []; urls = []
     for tile in (0,1):
-        url = f'https://api.gbif.org/v2/map/occurrence/density/0/{tile}/0.mvt?srs=EPSG:4326&bin=square&squareSize=2'
+        url = f'https://api.gbif.org/v2/map/occurrence/density/0/{tile}/0.mvt?srs=EPSG:4326&bin=square&squareSize=2&taxonKey=1'
         urls.append(url)
         with urllib.request.urlopen(url, timeout=90) as response: data = response.read()
         result.extend(points(data,tile))
     source_cells = len(result)
     result = aggregate(result)
-    output = {'source':'GBIF occurrence density','retrieved':datetime.now(timezone.utc).isoformat(),'urls':urls,'metric':'occurrence count, not species richness','gridDegrees':0.714,'sourceCells':source_cells,'points':result}
+    output = {'source':'GBIF Animalia occurrence density','taxonKey':1,'retrieved':datetime.now(timezone.utc).isoformat(),'urls':urls,'metric':'occurrence count, not species richness','gridDegrees':0.714,'sourceCells':source_cells,'points':result}
     (ROOT/'assets'/'occurrence-density.json').write_text(json.dumps(output,separators=(',',':')),encoding='utf-8')
     print(len(result), 'occupied cells;', sum(p[2] for p in result), 'records')
