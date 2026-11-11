@@ -1,0 +1,25 @@
+.settings-dialog{width:min(720px,calc(100% - 28px));max-height:88vh;overflow:auto;padding:27px 32px;background:#f5ecd2;color:#354532;border:1px solid #98845a;box-shadow:0 20px 70px #18291555;font:18px/1.55 var(--font,var(--serif,Georgia,serif))}
+.settings-dialog::backdrop{background:#1f3427ba;backdrop-filter:blur(3px)}
+.settings-dialog *{box-sizing:border-box}
+.settings-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;border-bottom:1px solid #98845a66;padding-bottom:12px}
+.settings-eyebrow{font-size:11px;line-height:1.4;letter-spacing:2px;color:#686d5c;margin:0 0 7px}
+.settings-dialog h2{font-family:inherit;font-size:40px;line-height:1.15;margin:0}
+.settings-heading button{font-family:inherit;font-size:42px;line-height:1;background:none;border:0;padding:0 4px;color:inherit;cursor:pointer}
+.settings-intro{margin:18px 0 22px;font-size:18px;line-height:1.7}
+.settings-dialog form{display:grid;gap:9px}
+.settings-dialog label{display:block;font-size:16px}
+.settings-dialog label span{font-size:13px;color:#686d5c}
+.settings-dialog input,.settings-dialog select{width:100%;padding:11px 12px;border:1px solid #98845a99;background:#fff9e8;color:#354532;border-radius:0;font-family:inherit;font-size:17px;line-height:1.3}
+.settings-dialog input:focus-visible,.settings-dialog select:focus-visible,.settings-dialog button:focus-visible{outline:2px solid #556b3f;outline-offset:3px}
+.settings-models{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:11px}
+.settings-models label{margin-bottom:8px}
+#settings-save{justify-self:start;margin-top:15px;padding:10px 22px;border:1px solid #556b3f;background:#556b3f;color:#fff9e8;font-family:inherit;font-size:18px;cursor:pointer}
+#settings-save:disabled{opacity:.5;cursor:wait}
+#settings-message{min-height:27px;margin:4px 0 0;font-size:15px;color:#556b3f}
+.settings-help{border-top:1px solid #98845a66;padding-top:13px;margin-top:17px;color:#686d5c}
+.settings-help p{font-size:16px;line-height:1.7;margin:8px 0 13px}
+.settings-help code,.settings-help pre{font-family:inherit}
+.settings-manual{border-top:1px solid #98845a66;padding-top:10px;margin-top:12px}
+.settings-manual summary{cursor:pointer;font-size:16px;color:#354532}
+.settings-manual pre{white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#e6e9dd;font-size:15px;line-height:1.6}
+@media(max-width:560px){.settings-dialog{padding:20px}.settings-dialog h2{font-size:30px}.settings-models{grid-template-columns:1fr;gap:12px}}
