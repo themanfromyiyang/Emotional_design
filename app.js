@@ -48,8 +48,8 @@
   $('source-count').textContent=String(r.sources.length);$('source-details').hidden=false;
   $('source-list').replaceChildren(...r.sources.map(s=>{const li=el('li');li.id=`source-${s.id}`;li.append(external(s.url,`[${s.id}] ${s.title}`));return li;}));
   $('research-summary').replaceChildren(el('h3',report.title),el('p',report.summary));
-  const habitat=el('div');if(report.habitat){habitat.append(el('p',report.habitat.description),el('p',`研究对象：${report.habitat.measuredSpecies}`,'small muted'));for(const id of report.habitat.sourceIds)habitat.append(citation(id));}
-  else habitat.append(el('p','本物种缺少足够的栖息地研究描述。点击生成环境时，将检索它生活环境的参考照片来规划场景。'));
+  const habitat=el('div');if(report.habitat){habitat.append(el('p',report.habitat.description),el('p',`生活环境概述 · ${report.habitat.measuredSpecies}（模型整理）`,'small muted'));for(const id of report.habitat.sourceIds)habitat.append(citation(id));}
+  else habitat.append(el('p','生活环境说明暂未生成，请重新生成报告。点击生成环境时，将检索它生活环境的参考照片来规划场景。'));
   $('habitat-content').replaceChildren(habitat);
   const vision=el('div',undefined,'vision-summary-list');
   if(r.proxyUsed){const proxy=r.proxyUsed;const note=el('p',`视觉模拟参考${({genus:'同属',family:'同科',order:'同目'})[proxy.level]||'近亲'} ${proxy.measuredSpecies} 的研究；这并非本物种实测。`,'vision-proxy-note');vision.append(note);for(const id of proxy.sourceIds)note.append(' ',citation(id));}
