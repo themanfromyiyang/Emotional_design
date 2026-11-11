@@ -33,7 +33,7 @@
  async function load(){
   const own=++version;abort?.abort();abort=new AbortController();$('species-list').setAttribute('aria-busy','true');$('species-list').replaceChildren(...Array.from({length:9},()=>node('div',undefined,'loading-tile')));$('empty').hidden=true;$('record-status').textContent=`正在查询 ${radius} km 范围内的记录…`;$('previous').disabled=true;$('next').disabled=true;
   try{
-   const data=await window.AtlasData.nearby({...selected,radius,page},abort.signal);if(own!==version)return;
+   const data=await window.ApiClient.request('/api/nearby?'+new URLSearchParams({...selected,radius,page}),{signal:abort.signal});if(own!==version)return;
    $('species-list').replaceChildren(...data.results.map(card));$('record-status').replaceChildren(node('strong',data.total.toLocaleString('zh-CN')),document.createTextNode(` 种动物有记录 · ${data.stale?'旧缓存':data.cached?'近期缓存':'在线更新'}`));$('page-number').textContent=String(page).padStart(2,'0');$('previous').disabled=page<=1;$('next').disabled=page*24>=data.total||page>=100;
    if(!data.results.length){$('empty').hidden=false;$('empty-title').textContent='这里还没有找到动物记录';$('empty-description').textContent='试试扩大范围，或在地球仪上换一个地点。';}
   }catch(error){if(own!==version||error.name==='AbortError')return;$('species-list').replaceChildren();$('record-status').textContent='查询未完成';$('empty').hidden=false;$('empty-title').textContent='暂时无法读取记录';$('empty-description').textContent=error.message;$('previous').disabled=page<=1;}

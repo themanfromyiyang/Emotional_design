@@ -42,22 +42,5 @@
   if(!taxon.ancestors?.some(a=>a.id===1)||!['species','subspecies'].includes(taxon.rank))throw Error('请选择动物物种条目。');
   return normalize(taxon);
  }
- async function request(url,options={}){
-  if(url==='/api/status')return {service:'see-through-your-eyes',aiConfigured:false,imageConfigured:false,researchModel:'gpt-6.1-sol',imageModel:'gpt-image-2'};
-  if(url.startsWith('/api/taxa?'))return search(new URLSearchParams(url.split('?')[1]),options.signal);
-  if(/^\/api\/taxa\/\d+$/.test(url))return detail(url.split('/').pop(),options.signal);
-  throw Error('GitHub Pages 静态版不提供 AI 视觉报告生成。请使用带后端的本地版本。');
- }
- window.AtlasData={nearby};window.ApiClient={request};
- const showInfo=()=>{
-  let dialog=document.getElementById('static-info');
-  if(!dialog){dialog=document.createElement('dialog');dialog.id='static-info';dialog.className='settings-dialog';dialog.innerHTML='<div class="settings-heading"><h2>GitHub Pages 公开版</h2><button type="button" aria-label="关闭">×</button></div><p class="settings-intro">地球探索和动物目录直接读取 iNaturalist 的公开记录。GitHub Pages 不能运行本站的研究与图像生成后端，因此视觉报告、照片模拟和 3D 环境生成暂不可用。API Key 不会被要求或上传。</p>';document.body.append(dialog);dialog.querySelector('button').addEventListener('click',()=>dialog.close());}
-  dialog.showModal();
- };
- document.getElementById('settings-button')?.addEventListener('click',showInfo);
- window.ServiceSettings={open:showInfo};
- if(document.getElementById('research-again')){
-  const notice=document.createElement('p');notice.className='static-site-notice';notice.textContent='GitHub Pages 静态版可浏览动物目录；视觉报告与模拟需要后端服务，当前公开版暂不提供。';
-  document.querySelector('.site-header')?.after(notice);
- }
+ window.InatClient={nearby,search,detail};
 })();

@@ -6,14 +6,16 @@
   <meta name="theme-color" content="#f3dfae">
   <meta name="application-name" content="万物视野">
   <meta property="og:site_name" content="万物视野 · See Through Your Eyes">
-  <meta name="description" content="转动地球，探索附近的动物和地点；查看 iNaturalist 的公开物种记录。">
+  <meta name="description" content="转动地球，探索附近的动物和地点；进入有来源的物种视觉报告与交互模拟。">
   <title>地球探索｜万物视野 · See Through Your Eyes</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='19' fill='%232b4435'/%3E%3Cellipse cx='20' cy='20' rx='14' ry='8' fill='none' stroke='%23f4f2e9'/%3E%3Ccircle cx='20' cy='20' r='5' fill='%23f4f2e9'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="atlas.css?v=20261111-formal">
   <link rel="stylesheet" href="settings.css?v=2">
   <script src="assets/vendor/d3.min.js" defer></script>
   <script src="assets/vendor/topojson-client.min.js" defer></script>
-  <script src="static-api.js?v=1" defer></script>
+  <script src="inat-client.js?v=1" defer></script>
+  <script src="api-client.js?v=20261112-backend" defer></script>
+  <script src="settings.js?v=4" defer></script>
   <script src="place-name.js?v=1" defer></script>
   <script src="atlas.js?v=20261111-place-names" defer></script>
 </head>
@@ -27,7 +29,7 @@
     <nav aria-label="主导航">
       <a href="./" aria-current="page">地球探索</a>
       <a href="research.html">物种视觉研究 ↗</a>
-      <button id="settings-button" type="button">关于公开版 ↗</button>
+      <button id="settings-button" type="button">配置生成服务 ↗</button>
     </nav>
   </header>
   <main id="main">
