@@ -4,7 +4,6 @@
  const groupNames={Mammalia:'哺乳类',Aves:'鸟类',Insecta:'昆虫',Reptilia:'爬行类',Amphibia:'两栖类',Actinopterygii:'辐鳍鱼类',Mollusca:'软体动物',Arachnida:'蛛形类'};
  let query='',group='',page=1,total=0,catalogueVersion=0,selectionVersion=0,imageVersion=0;
  let selected=null,research=null,sourceImage='',generatedImage='',busyResearch=false,busyImage=false,config={aiConfigured:false},focusBeforeDialog=null;
- const embedded=new URLSearchParams(location.search).get('embed')==='1';
  let catalogueAbort=null;
  const api=window.ApiClient.request;
  function backendMissing(){ $('backend-banner').hidden=false;$('connection-label').textContent='请打开完整网站';const params=new URLSearchParams({q:query,group});const address='http://127.0.0.1:5181/research.html?'+params+location.hash;$('backend-banner').querySelector('a').href=address;$('open-full-site').href=address;$('open-full-site').hidden=false;$('retry-search').hidden=true; }
@@ -13,19 +12,18 @@
  $('close-dialog').addEventListener('click',()=>$('info-dialog').close());$('info-dialog').addEventListener('close',()=>focusBeforeDialog?.focus());
  $('method-button').addEventListener('click',()=>dialog('<h2 id="dialog-title">从问题到视觉报告</h2><p>选择物种后，向所选研究模型提问“这种动物眼中的世界是怎么样的？”，检索视觉与栖息地资料并整理带来源的视觉报告。</p><p>报告逐条标明真正研究的物种。本物种视觉证据不足时可采用有来源的近亲资料，栖息地优先使用本物种资料。点击生成环境后才检索参考照片并规划 3D 场景。模拟是有依据的示意，不能精确复原主观视觉。</p>'));
  window.addEventListener('service-settings-saved',event=>{config={...config,...event.detail};$('connection-label').textContent=config.aiConfigured?'研究服务已配置':'配置研究服务';$('connection-dot').classList.toggle('ready',config.aiConfigured);updateGenerate();});
- if(embedded)window.addEventListener('message',event=>{if(event.origin===location.origin&&event.source===parent&&event.data?.type==='atlas-settings-saved')status().then(updateGenerate);});
  async function status(){if(location.protocol==='file:'){showLocalHelp();return;}try{config=await api('/api/status');$('connection-label').textContent=config.aiConfigured?'研究服务已配置':'配置研究服务';$('connection-dot').classList.toggle('ready',config.aiConfigured);}catch(error){$('connection-label').textContent='服务未连接';if(error.code==='BACKEND_NOT_CONNECTED')backendMissing();}}
  function showLocalHelp(){backendMissing();$('catalogue-status').textContent='请打开完整网站以使用在线功能。';$('catalogue-grid').setAttribute('aria-busy','false');$('empty-state').hidden=false;emptyState('进入完整网站，开始探索','点击下方按钮连接动物数据库；请确保本地服务已启动。');}
  function emptyState(title,description){$('empty-state').querySelector('h3').textContent=title;$('empty-state').querySelector('p').textContent=description;}
  function placeholder(t){const cover=el('div',undefined,'cover no-photo');cover.append(el('span',t.name.split(' ').slice(0,2).map(w=>w[0]).join(''),'monogram'));return cover;}
  function card(t){
   const article=el('article',undefined,'animal-card'),button=el('button',undefined,'card-open');button.type='button';button.setAttribute('aria-label',`研究${t.commonName||t.name}的视觉`);
-  let cover=t.photo?el('div',undefined,'cover'):placeholder(t);
-  if(t.photo){const img=el('img');img.src=t.photo.url;img.alt=t.commonName||t.name;img.loading='lazy';img.referrerPolicy='no-referrer';img.addEventListener('error',()=>{const fallback=placeholder(t);fallback.append(el('span',groupNames[t.group]||'动物','card-rank'));cover.replaceWith(fallback);cover=fallback;},{once:true});cover.append(img);}
+  const cover=placeholder(t);
   cover.append(el('span',groupNames[t.group]||'动物','card-rank'));
   const text=el('div',undefined,'card-text');text.append(el('h3',t.commonName||t.name),el('p',t.name,'latin'),el('span','↗','card-arrow'));if(t.matchType==='exact')text.append(el('span','名称精确匹配','badge'));
   const bottom=el('div',undefined,'card-bottom');bottom.append(el('span',`${t.observationsCount.toLocaleString('zh-CN')} 条观察`),el('span','探索视觉'));text.append(bottom);button.append(cover,text);button.addEventListener('click',()=>choose(t));article.append(button);
-  if(t.photo){const credit=external(t.photo.source,`${t.photo.license.toUpperCase()} · ${t.photo.attribution}`,'photo-credit');credit.title=t.photo.attribution;article.append(credit);}else article.append(el('span','暂无可显示的开放许可照片','photo-credit'));
+  const credit=el('div',undefined,'photo-credit');article.append(credit);
+  window.SpeciesPhotos.mount({taxon:t,cover,credit});
   return article;
  }
  async function loadCatalogue(){
@@ -40,18 +38,18 @@
  $('search-form').addEventListener('submit',e=>{e.preventDefault();query=$('search').value.trim();page=1;loadCatalogue();});
  $('filters').addEventListener('click',e=>{const button=e.target.closest('button[data-group]');if(!button)return;group=button.dataset.group;page=1;for(const b of $('filters').querySelectorAll('button')){b.classList.toggle('selected',b===button);b.setAttribute('aria-pressed',String(b===button));}loadCatalogue();});
  $('previous').addEventListener('click',()=>{page--;loadCatalogue();});$('next').addEventListener('click',()=>{page++;loadCatalogue();});$('retry-search').addEventListener('click',loadCatalogue);
- function back(e){e?.preventDefault();selectionVersion++;selected=null;research=null;imageVersion++;$('workspace-view').hidden=true;$('catalogue-view').hidden=false;history.replaceState(null,'',location.pathname+location.search);if(embedded){delete document.documentElement.dataset.embedTaxon;parent.postMessage({type:'atlas-embed-catalogue'},location.origin);}window.scrollTo({top:0});}
+ function back(e){e?.preventDefault();selectionVersion++;selected=null;research=null;imageVersion++;$('workspace-view').hidden=true;$('catalogue-view').hidden=false;history.replaceState(null,'',location.pathname);window.scrollTo({top:0});}
  for(const id of ['nav-catalogue','back'])$(id).addEventListener('click',back);
  function resetImage(){imageVersion++;sourceImage='';generatedImage='';$('original-image').hidden=true;$('result-image').hidden=true;$('compare-line').hidden=true;$('comparison').hidden=true;$('download').hidden=true;$('image-empty').hidden=false;$('image-label').hidden=true;$('generating-overlay').hidden=true;$('image-stage').style.aspectRatio='3 / 2';$('upload').value='';$('image-status').textContent='示例为草地与野花照片，尚未应用任何动物视觉效果。';}
- function choose(t){selected=t;selectionVersion++;research=null;resetImage();$('catalogue-view').hidden=true;$('workspace-view').hidden=false;$('species-name').textContent=t.commonName||t.name;$('species-latin').textContent=t.name;$('species-source').href=t.sourceUrl;for(const id of ['research-summary','habitat-content','vision-summary','research-claims-content','research-limits','source-list','research-queries'])$(id).replaceChildren();$('research-topics').hidden=true;$('research-claims').open=false;$('source-details').open=false;$('source-details').hidden=true;$('source-count').textContent='0';$('research-status').textContent=`点击“生成视觉报告”，询问所选模型“${t.commonName||t.name}眼中的世界是怎么样的？”`;history.replaceState(null,'',`#taxon=${t.id}`);if(embedded){document.documentElement.dataset.embedTaxon='1';parent.postMessage({type:'atlas-embed-species',id:t.id},location.origin);}window.scrollTo({top:0});window.dispatchEvent(new CustomEvent('world-species-change',{detail:t}));window.dispatchEvent(new Event('world-visible'));updateGenerate();}
+ function choose(t){selected=t;selectionVersion++;research=null;resetImage();$('catalogue-view').hidden=true;$('workspace-view').hidden=false;$('species-name').textContent=t.commonName||t.name;$('species-latin').textContent=t.name;$('species-source').href=t.sourceUrl;for(const id of ['research-summary','habitat-content','vision-summary','research-claims-content','research-limits','source-list','research-queries'])$(id).replaceChildren();$('research-topics').hidden=true;$('research-claims').open=false;$('source-details').open=false;$('source-details').hidden=true;$('source-count').textContent='0';$('research-status').textContent=`点击“生成视觉报告”，询问所选模型“${t.commonName||t.name}眼中的世界是怎么样的？”`;history.replaceState(null,'',`#taxon=${t.id}`);window.scrollTo({top:0});window.dispatchEvent(new CustomEvent('world-species-change',{detail:t}));window.dispatchEvent(new Event('world-visible'));updateGenerate();}
  function citation(id){const a=el('a',`[${id}]`,'citation');a.href=`#source-${id}`;a.addEventListener('click',event=>{event.preventDefault();$('source-details').open=true;$(`source-${id}`)?.scrollIntoView({block:'nearest'});});return a;}
  function renderResearch(r){
   const report=r.report;$('research-status').textContent=`视觉报告已生成 · ${new Date(r.retrievedAt).toLocaleString('zh-CN')} · ${r.model||config.researchModel}`;
   $('source-count').textContent=String(r.sources.length);$('source-details').hidden=false;
   $('source-list').replaceChildren(...r.sources.map(s=>{const li=el('li');li.id=`source-${s.id}`;li.append(external(s.url,`[${s.id}] ${s.title}`));return li;}));
   $('research-summary').replaceChildren(el('h3',report.title),el('p',report.summary));
-  const habitat=el('div');if(report.habitat){habitat.append(el('p',report.habitat.description),el('p',`研究对象：${report.habitat.measuredSpecies}`,'small muted'));for(const id of report.habitat.sourceIds)habitat.append(citation(id));}
-  else habitat.append(el('p','本物种缺少足够的栖息地研究描述。点击生成环境时，将检索它生活环境的参考照片来规划场景。'));
+  const habitat=el('div');if(report.habitat){habitat.append(el('p',report.habitat.description),el('p',`生活环境概述 · ${report.habitat.measuredSpecies}（模型整理）`,'small muted'));for(const id of report.habitat.sourceIds)habitat.append(citation(id));}
+  else habitat.append(el('p','生活环境说明暂未生成，请重新生成报告。点击生成环境时，将检索它生活环境的参考照片来规划场景。'));
   $('habitat-content').replaceChildren(habitat);
   const vision=el('div',undefined,'vision-summary-list');
   if(r.proxyUsed){const proxy=r.proxyUsed;const note=el('p',`视觉模拟参考${({genus:'同属',family:'同科',order:'同目'})[proxy.level]||'近亲'} ${proxy.measuredSpecies} 的研究；这并非本物种实测。`,'vision-proxy-note');vision.append(note);for(const id of proxy.sourceIds)note.append(' ',citation(id));}

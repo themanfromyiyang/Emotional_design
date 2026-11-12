@@ -1,11 +1,11 @@
 (() => {
  'use strict';
  const $=id=>document.getElementById(id),node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
- const places={hongkong:{lat:22.49,lng:114.04,name:'香港 · 米埔湿地'},amazon:{lat:-3.1,lng:-60.02,name:'亚马孙 · 马瑙斯'},serengeti:{lat:-2.33,lng:34.83,name:'塞伦盖蒂'},borneo:{lat:5.87,lng:117.95,name:'婆罗洲 · 山打根'},reef:{lat:-16.5,lng:145.8,name:'大堡礁'}};
+ const places={tongji:{lat:31.284419,lng:121.502065,name:'上海 · 同济大学四平路校区附近'},hongkong:{lat:22.49,lng:114.04,name:'香港 · 米埔湿地'},amazon:{lat:-3.1,lng:-60.02,name:'亚马孙 · 马瑙斯'},serengeti:{lat:-2.33,lng:34.83,name:'塞伦盖蒂'},borneo:{lat:5.87,lng:117.95,name:'婆罗洲 · 山打根'},reef:{lat:-16.5,lng:145.8,name:'大堡礁'}};
  const params=new URLSearchParams(location.search),read=(key,lo,hi,fallback)=>{const raw=params.get(key),n=Number(raw);return raw!==null&&raw.trim()!==''&&Number.isFinite(n)&&n>=lo&&n<=hi?n:fallback;};
- let selected={lat:read('lat',-90,90,22.49),lng:read('lng',-180,180,114.04)},radius=read('radius',2,200,25),page=1,version=0,abort;
+ let selected={lat:read('lat',-90,90,places.tongji.lat),lng:read('lng',-180,180,places.tongji.lng)},radius=read('radius',2,200,25),page=1,version=0,abort;
  if(![2,5,10,25,50,200].includes(radius))radius=25;
- let label=params.has('lat')?'正在识别地点…':places.hongkong.name,placeVersion=0,placeData;
+ let label=params.has('lat')?'正在识别地点…':places.tongji.name,placeVersion=0,placeData;
  const fmt=(lat,lng,digits=3)=>`${Math.abs(lat).toFixed(digits)}°${lat<0?'S':'N'}, ${Math.abs(lng).toFixed(digits)}°${lng<0?'W':'E'}`;
  function resolvePlace(point){
   const own=++placeVersion;
@@ -17,17 +17,18 @@
   $('coordinates').textContent=fmt(selected.lat,selected.lng);$('location-title').textContent=label;
   $('latitude').value=selected.lat.toFixed(4);$('longitude').value=selected.lng.toFixed(4);
   document.querySelectorAll('[data-radius]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.radius)===radius)));
-  const query=new URLSearchParams({lat:selected.lat.toFixed(5),lng:selected.lng.toFixed(5),radius});history.replaceState(null,'','?'+query+location.hash);
+  const query=new URLSearchParams({lat:selected.lat.toFixed(5),lng:selected.lng.toFixed(5),radius});history.replaceState(null,'','?'+query);
   $('observation-link').href='https://www.inaturalist.org/observations?'+new URLSearchParams({lat:selected.lat,lng:selected.lng,radius,taxon_id:1,verifiable:'true',view:'species'});
  }
  function card(t){
   const article=node('article',undefined,'species-card'),link=node('a'),cover=node('div',undefined,'species-image');
-  link.href='#taxon='+t.id;
+  link.href='research.html#taxon='+t.id;
   link.setAttribute('aria-label',(t.commonName||t.name)+'：探索视觉');
   const fallback=()=>{cover.replaceChildren(node('span',t.name.split(' ').map(s=>s[0]).slice(0,2).join(''),'no-image'));};
-  if(t.photo){const img=node('img');img.src=t.photo.url;img.alt=t.commonName||t.name;img.loading='lazy';img.referrerPolicy='no-referrer';img.addEventListener('error',fallback,{once:true});cover.append(img);}else fallback();
+  fallback();
   link.append(cover,node('h3',t.commonName||t.name),node('p',t.name,'latin'),node('p',`${t.localCount.toLocaleString('zh-CN')} 条附近记录`,'count'));article.append(link);
-  if(t.photo){const credit=node('a',t.photo.license.toUpperCase()+' · '+t.photo.attribution,'credit');credit.href=t.photo.source;credit.target='_blank';credit.rel='noopener noreferrer';article.append(credit);}else article.append(node('span','暂无开放许可照片','credit'));
+  const credit=node('div',undefined,'credit');article.append(credit);
+  window.SpeciesPhotos.mount({taxon:t,cover,credit});
   return article;
  }
  async function load(){

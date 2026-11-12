@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
@@ -9,15 +9,16 @@
   <meta name="description" content="转动地球，探索附近的动物和地点；进入有来源的物种视觉报告与交互模拟。">
   <title>地球探索｜万物视野 · See Through Your Eyes</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='19' fill='%232b4435'/%3E%3Cellipse cx='20' cy='20' rx='14' ry='8' fill='none' stroke='%23f4f2e9'/%3E%3Ccircle cx='20' cy='20' r='5' fill='%23f4f2e9'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="atlas.css?v=20261112-index">
+  <link rel="stylesheet" href="atlas.css?v=20261111-formal">
   <link rel="stylesheet" href="settings.css?v=2">
+  <link rel="stylesheet" href="community.css?v=1">
+  <script src="community.js?v=1" defer></script>
   <script src="assets/vendor/d3.min.js" defer></script>
   <script src="assets/vendor/topojson-client.min.js" defer></script>
   <script src="api-client.js?v=20261109-4" defer></script>
-  <script src="settings.js?v=6" defer></script>
+  <script src="settings.js?v=4" defer></script>
   <script src="place-name.js?v=1" defer></script>
-  <script src="atlas.js?v=20261112-index" defer></script>
-  <script src="index-research.js?v=1" defer></script>
+  <script src="species-photos.js?v=20261112-1" defer></script><script src="atlas.js?v=20261112-photos" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳至地球探索</a>
@@ -28,12 +29,12 @@
     </a>
     <nav aria-label="主导航">
       <a href="/" aria-current="page">地球探索</a>
-      <a href="#research" id="nav-research">物种视觉研究 ↗</a>
+      <a href="research.html">物种视觉研究 ↗</a>
+      <button type="button" data-contribute>补充生物信息 ＋</button>
       <button id="settings-button" type="button">配置生成服务 ↗</button>
     </nav>
   </header>
   <main id="main">
-    <section id="atlas-home" aria-label="地球探索">
     <form id="search-form" action="research.html" method="get" role="search" class="search-bar">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 6 6"/></svg>
       <label class="sr-only" for="search">搜索动物名称或学名</label>
@@ -47,7 +48,7 @@
     <div class="atlas-layout">
       <section class="species-panel" aria-label="选点附近物种">
         <p class="overline">附近的动物</p>
-        <h2 id="location-title" class="location-title">香港 · 米埔湿地</h2>
+        <h2 id="location-title" class="location-title">上海 · 同济大学四平路校区附近</h2>
         <p id="coordinates" class="coordinates"></p>
         <div class="radius-row" role="group" aria-label="查询半径">
           <span>范围</span>
@@ -70,21 +71,16 @@
       </section>
       <section class="globe-panel" aria-label="交互地球仪">
         <form id="coordinate-form" class="coordinate-form">
-          <label for="latitude">纬度</label><input id="latitude" type="number" min="-90" max="90" step="any" required value="22.49">
-          <label for="longitude">经度</label><input id="longitude" type="number" min="-180" max="180" step="any" required value="114.04">
+          <label for="latitude">纬度</label><input id="latitude" type="number" min="-90" max="90" step="any" required value="31.284419">
+          <label for="longitude">经度</label><input id="longitude" type="number" min="-180" max="180" step="any" required value="121.502065">
           <button type="submit">前往 ↗</button><p id="form-error" class="form-error" role="alert" hidden></p>
         </form>
         <div class="globe-stage"><canvas id="globe" tabindex="0" role="img" aria-label="可旋转的地球仪。拖动旋转，左键单击选点。键盘方向键旋转，Enter 选择球心；也可使用上方经纬度表单。"></canvas><div id="globe-loading" class="globe-loading">正在展开世界地图…</div></div>
         <div class="globe-bottom"><span>拖动旋转 · 单击选点 · 方向键 / ENTER</span><span id="view-coordinates"></span><button id="recenter" type="button">回到选点 ⊙</button></div>
-        <div class="jump-links"><button data-place="hongkong">米埔湿地</button><button data-place="amazon">亚马孙</button><button data-place="serengeti">塞伦盖蒂</button><button data-place="borneo">婆罗洲</button><button data-place="reef">大堡礁</button></div>
+        <div class="jump-links"><button data-place="tongji">同济四平校区</button><button data-place="hongkong">米埔湿地</button><button data-place="amazon">亚马孙</button><button data-place="serengeti">塞伦盖蒂</button><button data-place="borneo">婆罗洲</button><button data-place="reef">大堡礁</button></div>
         <p class="map-note">地球点纹用于描绘陆地，不代表观察记录。选点后左侧显示实际查询结果。</p>
       </section>
     </div>
-    </section>
-    <section id="index-research" class="index-research" aria-label="物种视觉研究" hidden>
-      <div class="index-research-bar"><button id="close-research" type="button">← 返回地球探索</button><span>物种视觉研究</span><a id="open-research-page" href="research.html" target="_blank" rel="noopener noreferrer">独立打开 ↗</a></div>
-      <iframe id="research-frame" title="物种视觉研究与模拟" loading="lazy"></iframe>
-    </section>
   </main>
   <footer><span>万物视野 · See Through Your Eyes</span><span>物种数据 <a href="https://www.inaturalist.org/" target="_blank" rel="noopener noreferrer">iNaturalist</a> · 地理轮廓 <a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener noreferrer">Natural Earth</a> · <a href="https://techdocs.gbif.org/en/openapi/v2/maps" target="_blank" rel="noopener noreferrer">GBIF</a></span></footer>
 </body>
