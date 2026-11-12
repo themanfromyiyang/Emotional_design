@@ -17,7 +17,7 @@
   <script src="api-client.js?v=20261112-backend" defer></script>
   <script src="settings.js?v=4" defer></script>
   <script src="place-name.js?v=1" defer></script>
-  <script src="atlas.js?v=20261111-place-names" defer></script>
+  <script src="species-photos.js?v=20261112-1" defer></script><script src="atlas.js?v=20261112-photos" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳至地球探索</a>
@@ -46,7 +46,7 @@
     <div class="atlas-layout">
       <section class="species-panel" aria-label="选点附近物种">
         <p class="overline">附近的动物</p>
-        <h2 id="location-title" class="location-title">香港 · 米埔湿地</h2>
+        <h2 id="location-title" class="location-title">上海 · 同济大学四平路校区附近</h2>
         <p id="coordinates" class="coordinates"></p>
         <div class="radius-row" role="group" aria-label="查询半径">
           <span>范围</span>
@@ -69,13 +69,13 @@
       </section>
       <section class="globe-panel" aria-label="交互地球仪">
         <form id="coordinate-form" class="coordinate-form">
-          <label for="latitude">纬度</label><input id="latitude" type="number" min="-90" max="90" step="any" required value="22.49">
-          <label for="longitude">经度</label><input id="longitude" type="number" min="-180" max="180" step="any" required value="114.04">
+          <label for="latitude">纬度</label><input id="latitude" type="number" min="-90" max="90" step="any" required value="31.284419">
+          <label for="longitude">经度</label><input id="longitude" type="number" min="-180" max="180" step="any" required value="121.502065">
           <button type="submit">前往 ↗</button><p id="form-error" class="form-error" role="alert" hidden></p>
         </form>
         <div class="globe-stage"><canvas id="globe" tabindex="0" role="img" aria-label="可旋转的地球仪。拖动旋转，左键单击选点。键盘方向键旋转，Enter 选择球心；也可使用上方经纬度表单。"></canvas><div id="globe-loading" class="globe-loading">正在展开世界地图…</div></div>
         <div class="globe-bottom"><span>拖动旋转 · 单击选点 · 方向键 / ENTER</span><span id="view-coordinates"></span><button id="recenter" type="button">回到选点 ⊙</button></div>
-        <div class="jump-links"><button data-place="hongkong">米埔湿地</button><button data-place="amazon">亚马孙</button><button data-place="serengeti">塞伦盖蒂</button><button data-place="borneo">婆罗洲</button><button data-place="reef">大堡礁</button></div>
+        <div class="jump-links"><button data-place="tongji">同济四平校区</button><button data-place="hongkong">米埔湿地</button><button data-place="amazon">亚马孙</button><button data-place="serengeti">塞伦盖蒂</button><button data-place="borneo">婆罗洲</button><button data-place="reef">大堡礁</button></div>
         <p class="map-note">地球点纹用于描绘陆地，不代表观察记录。选点后左侧显示实际查询结果。</p>
       </section>
     </div>
