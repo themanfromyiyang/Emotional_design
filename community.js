@@ -1,0 +1,34 @@
+(() => {
+ 'use strict';
+ const banner=document.createElement('section');banner.className='contribution-banner';banner.innerHTML='<div><h2>让你的观察，成为理解它的线索。</h2><p>与自然爱好者、当地居民一起，补充栖息地、生活习性与现场影像。</p></div><button type="button" class="contribution-button" data-contribute>补充生物信息 ＋</button>';
+ document.querySelector('.atlas-layout').before(banner);
+ const dialog=document.createElement('dialog');dialog.className='community-dialog';dialog.setAttribute('aria-labelledby','community-title');
+ dialog.innerHTML=`<div class="community-heading"><div><p class="overline">COMMUNITY FIELD NOTES · 社区观察</p><h2 id="community-title">补充一份生物观察</h2></div><button type="button" id="community-close" aria-label="关闭">×</button></div>
+ <p class="community-intro">你熟悉的一片湿地、一段鸣叫或一次抓拍，都能为理解动物的世界补充线索。资料和附件将提交到本站云端，作为待整理参考；不会自动公开展示或接入 AI 生成。</p>
+ <form id="community-form"><div class="community-grid">
+ <label>物种名称 *<input name="species" required maxlength="100" placeholder="如：黑脸琵鹭 / Platalea minor"></label>
+ <label>观察地点 *<input name="place" required maxlength="200" placeholder="如：香港 · 米埔湿地"></label>
+ <label>观察日期<input name="observedAt" type="date"></label>
+ <label>你的身份<select name="role"><option>自然爱好者</option><option>当地居民</option><option>研究与保护工作者</option><option>其他观察者</option></select></label>
+ <label class="community-wide">栖息地信息<textarea name="habitat" maxlength="3000" placeholder="水域、植被、光照、天气，以及它周围的环境…"></textarea></label>
+ <label class="community-wide">生活习性<textarea name="behavior" maxlength="3000" placeholder="它在何时觅食、如何移动、与同伴如何互动？请记录亲眼观察到的情况。"></textarea></label>
+ <label class="community-wide">现场图片、视频或音频<input id="community-upload" type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,audio/mpeg,audio/wav,audio/ogg,audio/mp4,audio/webm"><span class="community-note">最多 6 个文件，每个不超过 4 MB，总计不超过 8 MB。支持 JPG、PNG、WebP、MP4、WebM、MP3、WAV、OGG、M4A。</span></label>
+ </div><div id="community-files" class="community-files"></div>
+ <p class="community-note">栖息地、习性或附件至少补充一项。请勿填写敏感物种的精确巢址。</p>
+ <label class="community-consent"><input name="consent" type="checkbox" required>我确认这是本人观察或有权提供的资料，同意将其作为该物种的环境与视觉参考。</label>
+ <div class="community-actions"><span class="community-note">保存至本站云端 · 待整理参考</span><button class="community-submit" type="submit">提交观察 ↗</button></div></form>
+ <p id="community-status" class="community-status" role="status" aria-live="polite"></p><details class="community-history"><summary>此浏览器提交的观察</summary><ul id="community-history"></ul></details>`;
+ document.body.append(dialog);
+ const $=id=>document.getElementById(id),form=$('community-form'),upload=$('community-upload'),submit=form.querySelector('[type=submit]');let files=[],urls=[],busy=false;
+ const status=(message,error=false)=>{$('community-status').textContent=message;$('community-status').dataset.error=String(error);};
+ function renderFiles(){urls.forEach(URL.revokeObjectURL);urls=[];$('community-files').replaceChildren();files.forEach((file,index)=>{const row=document.createElement('div');row.className='community-file';const media=document.createElement(file.type.startsWith('image/')?'img':file.type.startsWith('video/')?'video':'audio');media.src=URL.createObjectURL(file);urls.push(media.src);if(media.tagName==='IMG')media.alt=file.name;else{media.controls=true;media.preload='metadata';}const name=document.createElement('span');name.textContent=`${file.name} · ${(file.size/1024/1024).toFixed(2)} MB`;const remove=document.createElement('button');remove.type='button';remove.textContent='移除';remove.disabled=busy;remove.setAttribute('aria-label',`移除 ${file.name}`);remove.onclick=()=>{files.splice(index,1);renderFiles();};row.append(media,name,remove);$('community-files').append(row);});}
+ const historyKey='through-their-eyes-community-receipts-v1';
+ let receipts=[];try{const saved=JSON.parse(localStorage.getItem(historyKey)||'[]');if(Array.isArray(saved))receipts=saved.slice(0,20);}catch{}
+ async function history(){$('community-history').replaceChildren();for(const record of receipts){const li=document.createElement('li');li.textContent=record.species+' · '+record.place+' · '+record.fileCount+' 个附件 · '+new Date(record.createdAt).toLocaleString('zh-CN');$('community-history').append(li);}if(!receipts.length)$('community-history').textContent='此浏览器还没有提交记录。';}
+ function remember(record){receipts=[record,...receipts].slice(0,20);try{localStorage.setItem(historyKey,JSON.stringify(receipts));}catch{}}
+ document.querySelectorAll('[data-contribute]').forEach(button=>button.addEventListener('click',()=>{if(!form.elements.place.value)form.elements.place.value=$('location-title').textContent;if(!form.elements.species.value)form.elements.species.value=$('search').value;dialog.showModal();history();}));
+ $('community-close').onclick=()=>dialog.close();dialog.addEventListener('close',()=>dialog.querySelectorAll('video,audio').forEach(media=>media.pause()));
+ upload.onchange=()=>{const incoming=[...upload.files];upload.value='';const next=[...files,...incoming];const types=['image/jpeg','image/png','image/webp','video/mp4','video/webm','audio/mpeg','audio/wav','audio/x-wav','audio/ogg','audio/mp4','audio/webm'];if(next.length>6||next.some(f=>!types.includes(f.type)||!f.size||f.size>4*1024*1024)||next.reduce((sum,f)=>sum+f.size,0)>8*1024*1024){status('附件未添加：请选择支持的格式，最多 6 个，每个 ≤ 4 MB，总计 ≤ 8 MB。',true);return;}files=next;status('');renderFiles();};
+ const readFile=file=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve({name:file.name,type:file.type,data:reader.result.split(',')[1]});reader.onerror=()=>reject(Error('文件读取失败，请重新选择附件。'));reader.readAsDataURL(file);});
+ form.onsubmit=async event=>{event.preventDefault();if(busy)return;const input=Object.fromEntries(new FormData(form));for(const key of ['species','place','habitat','behavior'])input[key]=input[key].trim();if(!input.species||!input.place){status('请填写物种名称和观察地点。',true);return;}if(!input.habitat&&!input.behavior&&!files.length){status('请至少填写栖息地、生活习性或添加一个附件。',true);return;}busy=true;form.querySelectorAll('input,textarea,select,button').forEach(el=>el.disabled=true);renderFiles();submit.textContent='正在保存…';status('正在读取并保存观察资料，请稍候。');try{input.files=await Promise.all(files.map(readFile));input.consent=input.consent==='on';const result=await window.ApiClient.request('/api/community',{method:'POST',body:JSON.stringify(input)});remember(result.record);form.reset();files=[];status(`观察和附件已保存至本站云端。\n${result.record.species} · ${result.record.place}；资料待整理，尚未接入 AI 生成。`);await history();}catch(error){status(error.message==='Failed to fetch'?'无法连接提交服务，内容已保留，请稍后重试。':error.message,true);}finally{busy=false;form.querySelectorAll('input,textarea,select,button').forEach(el=>el.disabled=false);submit.textContent='提交观察 ↗';renderFiles();}};
+})();
