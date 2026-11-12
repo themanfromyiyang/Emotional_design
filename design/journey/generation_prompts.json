@@ -1,0 +1,30 @@
+{
+  "tool": "built-in image_gen",
+  "commonPrompt": "Generate ONE standalone photorealistic swan-first-person storyboard scene, ultra-wide 3:1 panorama, same park lake, reeds and trees, daylight and natural blue-green water across the series. Reference image 1 for photographic style and very restrained local cyan/iridescent highlights, reference image 2 for broad panoramic first-person water-level composition. Emphasize lateral information and simultaneous attention to left and right, slight cylindrical panoramic sweep without extreme fisheye. Distant narrow central area slightly softer, side information crisp; no extreme blur, no hard blur strip, no center-focused hero composition. Natural nuanced colors, no overall purple filter. A few tiny subtle cyan iridescent edges on selected relevant materials suggest extra sensory information artistically, never neon everywhere. No UI, no text, no buttons, no arrows, no labels, no frame. Own body never visible, only tiny dark red beak edge at lower frame if needed. Output one image, not a collage. Scene: ",
+  "scenes": [
+    {
+      "file": "scene_02_discover_waterweed_v1.png",
+      "prompt": "Head tilts down just before beak touches the water. Shoreline pushed to upper band, water fills foreground. A patch of submerged waterweed is visible through reflections at left foreground, naturally partly obscured. Tiny dark red beak corner near bottom edge, angled toward weed on left. Right side has distinct reeds and open water. Subtle iridescent cyan highlight on a few weed blades, not a glowing mass. Not underwater yet."
+    },
+    {
+      "file": "scene_03_head_enters_water_v1.png",
+      "prompt": "Freeze the moment the first-person head crosses water surface: gently curved waterline traverses upper-middle of panorama; above is familiar lake and side shores, below is ONLY soft green-brown abstract murky color shapes with the tiny nearby red beak corner, two or three faint tactile-like glints near it. No detailed underwater vegetation or lakebed, no aquarium clarity, no visible self head or external swan diving. Underwater half deliberately visually uncertain; side shores above water retain detail."
+    },
+    {
+      "file": "scene_04_food_obtained_v1.png",
+      "prompt": "First-person head has just risen out of water after feeding. At lower LEFT edge only a cropped small dark red beak tip grips a small wet bunch of green aquatic weeds, physically visibly held. A few water droplets cling near frame edge. Lake and shore stretch sideways; a black swan companion at far RIGHT middle-distance. Faint cyan sheen on only a couple wet weed edges. No full own head or body. Successful grasp of weeds unmistakable, panorama mostly lake."
+    },
+    {
+      "file": "scene_05_companion_response_v1.png",
+      "prompt": "A nearby black swan companion occupies LEFT side foreground at conversational distance, natural curved neck, red beak slightly open as calling, subtly raised real black feathers. Water gap between viewer and companion. Right side reeds and open water, distant shore gently soft at center. Only a sliver of own dark red beak along bottom if needed. Subtle cyan sheen on a few ripples next to companion, no drawn sound waves. Anatomically accurate black swan, no anthropomorphic expressions."
+    },
+    {
+      "file": "scene_06_attend_cygnet_v1.png",
+      "prompt": "One small fluffy grey cygnet floats very close in RIGHT lower side of first-person view, surrounded by fine clear ripples; adult black swan companion farther LEFT across water. Large open lake remains between side subjects, central distance mildly soft. Show spatial relationship through size, overlap and ripples, avoid dramatic central vanishing point. A very restrained cyan reflection near cygnet's waterline, natural grey fluff. Viewer is parent swan but own body absent."
+    },
+    {
+      "file": "scene_07_alert_approacher_v1.png",
+      "prompt": "An unfamiliar adult black swan approaches from LEFT side mid-foreground, near a small grey cygnet at RIGHT lower side; distances between them clearly nearer than comfortable. First-person parent raises wing slightly: only a small cropped wedge of own black wing feathers enters extreme lower-left edge, no whole own body. Approacher has natural alert neck and slightly lifted feathers, no monster or aggressive red eyes. Open escape water toward right, subtle selective cyan sheen on ripples, no red warning effects. Wide bilateral composition, central far shore gently soft."
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+﻿# Independent local repositories are not deployment submodules.
+/.codex/photo-pages-publish/
+/atlas-github-pages/site/
+/atlas-public-site/
+/artifacts/

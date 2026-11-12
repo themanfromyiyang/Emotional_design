@@ -1,0 +1,19 @@
+{
+  "name": "see-through-your-eyes-atlas",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Search animals, retrieve visual research, and generate an interpretation from your own image",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.cjs",
+    "check": "node --check app.js && node --check place-name.js && node --check settings.js && node --check vision-transfer.js && node --check world-simulation.js && node --check server.cjs && node --check research.cjs && node --check inaturalist.cjs && node verify.cjs && node --test app.test.cjs species-photos.test.cjs",
+    "test:live": "node verify-live.cjs",
+    "test:atlas": "node --test atlas.test.cjs",
+    "test:community": "node --check community.js && node --test community.test.cjs"
+  },
+  "dependencies": {
+    "three": "^0.187.0"
+  }
+}

@@ -1,0 +1,10 @@
+.cache/
+.env
+.env.*
+!.env.example
+
+server-output.log
+server-error.log
+node_modules/
+__pycache__/
+data/community/
