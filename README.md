@@ -61,3 +61,12 @@ npm start -- --port 5182
 两个参考目录原位于 `see through your eyes atlas/`。网站运行所需的 `assets/`、`data/` 仍保留在源码目录中。
 
 `.codex/`、`.idea/`、`.workbuddy/` 为工具配置；各项目的依赖、缓存和构建产物保留原位。整理仅移动设计资料，不删除文件，也不覆盖已有代码改动。
+## 合并的 GitHub Pages 发布快照
+
+根目录的 HTML、JavaScript、CSS、assets/ 与 vendor/ 来自 gh-pages 分支，作为发布快照保留。本地开发仍使用 see through your eyes atlas/。本次合并未改变线上部署来源。
+
+公开网站：<https://themanfromyiyang.github.io/Emotional_design/>
+
+GitHub Pages 托管地球探索与物种视觉研究前端。动物数据、视觉报告和模拟环境通过独立的公开 API 服务获取。地图及记录密度快照随前端发布。
+
+访客在设置中填写自己的 OpenAI 或 DeepSeek API Key 后，可生成视觉报告；需要图像生成时须填写 OpenAI API Key。密钥只保存在当前浏览器标签页的 `sessionStorage` 中，并在对应生成请求中发送给 API 服务。网站源码和部署环境均不包含站长的密钥。
