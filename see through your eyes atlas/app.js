@@ -53,7 +53,7 @@
   $('habitat-content').replaceChildren(habitat);
   const vision=el('div',undefined,'vision-summary-list');
   if(r.proxyUsed){const proxy=r.proxyUsed;const note=el('p',`视觉模拟参考${({genus:'同属',family:'同科',order:'同目'})[proxy.level]||'近亲'} ${proxy.measuredSpecies} 的研究；这并非本物种实测。`,'vision-proxy-note');vision.append(note);for(const id of proxy.sourceIds)note.append(' ',citation(id));}
-  for(const [key,label] of [['color','颜色辨认'],['fieldOfView','视野'],['clarity','清晰度']]){const row=report.visionSummary?.[key];const item=el('div',undefined,'vision-summary-row');item.append(el('strong',label),el('p',row?.text||'尚无可核验的本物种资料。'));for(const id of row?.sourceIds||[])item.append(citation(id));vision.append(item);}
+  for(const [key,label] of [['color','颜色体验'],['lowLight','暗处亮度感'],['fieldOfView','视野'],['clarity','细节清晰度']]){const evidence=report.visionEvidence?.[key],row=evidence?{text:evidence.explanation,sourceIds:evidence.sourceIds}:report.visionSummary?.[key];const item=el('div',undefined,'vision-summary-row');item.append(el('strong',label),el('p',row?.text||'尚无可核验的本物种资料。'));if(evidence)item.append(el('p',`研究对象：${evidence.measuredSpecies} · ${evidence.level==='direct'?'本物种研究':'借用近亲研究（非本物种实测）'}`,'small muted'));for(const id of row?.sourceIds||[])item.append(citation(id));vision.append(item);}
   $('vision-summary').replaceChildren(vision);
   $('research-topics').hidden=false;
   const features=el('section');features.append(el('h4','研究条目'));
