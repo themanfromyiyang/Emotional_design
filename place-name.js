@@ -19,7 +19,7 @@
   }
   return best?{name:best[2],countryCode:best[3],km:bestDistance}:null;
  }
- function label(point,cities,locale='zh-CN',landmarks=[]){
+ function label(point,cities,locale='en-US',landmarks=[]){
   const landmark=landmarks.find(site=>distance(point.lat,point.lng,site.lat,site.lng)<10);
   if(landmark)return landmark.name;
   const place=nearest(point,cities);
@@ -28,8 +28,8 @@
   try{country=new Intl.DisplayNames([locale],{type:'region'}).of(place.countryCode)||'';}catch{}
   const name=country&&country!==place.name?country+' · '+place.name:place.name;
   if(place.km<15)return name;
-  if(place.km<150)return name+'附近';
-  return `距${name}约${Math.round(place.km/10)*10}公里`;
+  if(place.km<150)return 'Near '+name;
+  return `About ${Math.round(place.km/10)*10} km from ${name}`;
  }
  return {distance,nearest,label};
 });

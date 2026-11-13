@@ -12,15 +12,15 @@
  async function inat(endpoint,signal){
   const hit=cache.get(endpoint);if(hit&&Date.now()-hit.at<300000)return {...hit.data,cached:true};
   const response=await fetch(base+endpoint,{headers:{Accept:'application/json'},signal});
-  if(!response.ok)throw Error(response.status===429?'iNaturalist 请求较多，请稍后重试。':'动物数据库暂时无法连接，请稍后重试。');
-  const data=await response.json();if(!Array.isArray(data.results))throw Error('动物数据库返回的数据格式异常。');
+  if(!response.ok)throw Error(response.status===429?'iNaturalist  is receiving too many requests. Please try again later.':'The animal database is temporarily unavailable. Please try again.');
+  const data=await response.json();if(!Array.isArray(data.results))throw Error('The animal database returned an unexpected response.');
   cache.set(endpoint,{at:Date.now(),data});if(cache.size>80)cache.delete(cache.keys().next().value);
   return data;
  }
  async function nearby(point,signal){
   const {lat,lng,radius=25,page=1}=point;
-  if(!Number.isFinite(Number(lat))||!Number.isFinite(Number(lng)))throw Error('坐标无效。');
-  const params=new URLSearchParams({lat,lng,radius,page,per_page:24,taxon_id:1,locale:'zh-CN',verifiable:'true',quality_grade:'research,needs_id'});
+  if(!Number.isFinite(Number(lat))||!Number.isFinite(Number(lng)))throw Error('Invalid coordinates.');
+  const params=new URLSearchParams({lat,lng,radius,page,per_page:24,taxon_id:1,locale:'en-US',verifiable:'true',quality_grade:'research,needs_id'});
   const raw=await inat('observations/species_counts?'+params,signal);
   const groups=new Set(['Animalia','Mammalia','Aves','Reptilia','Amphibia','Actinopterygii','Mollusca','Insecta','Arachnida']);
   const results=raw.results.filter(row=>row.taxon?.id&&(Array.isArray(row.taxon.ancestor_ids)?row.taxon.ancestor_ids.includes(1):groups.has(row.taxon.iconic_taxon_name))).map(row=>({...normalize(row.taxon),localCount:row.count,isAnimal:true}));
@@ -28,7 +28,7 @@
  }
  async function search(params,signal){
   const q=(params.get('q')||'').normalize('NFKC').trim().slice(0,100),group=params.get('group')||'',page=Math.max(1,Math.min(100,Number(params.get('page'))||1));
-  const filter=new URLSearchParams({taxon_id:String(groupIds[group]||1),rank:'species',is_active:'true',locale:'zh-CN'});
+  const filter=new URLSearchParams({taxon_id:String(groupIds[group]||1),rank:'species',is_active:'true',locale:'en-US'});
   if(!q){filter.set('per_page','24');filter.set('page',String(page));filter.set('order_by','observations_count');const raw=await inat('taxa?'+filter,signal);return {results:raw.results.map(normalize),total:raw.total_results||0,cached:!!raw.cached};}
   filter.set('q',q);filter.set('all_names','true');filter.set('per_page','30');
   const raw=await inat('taxa/autocomplete?'+filter,signal),key=nameKey(q);
@@ -36,10 +36,10 @@
   return {results:candidates.slice((page-1)*24,page*24),total:candidates.length,searchLimit:30,truncated:raw.total_results>raw.results.length,cached:!!raw.cached};
  }
  async function detail(id,signal){
-  if(!/^[1-9]\d{0,9}$/.test(id))throw Error('物种编号无效。');
-  const raw=await inat('taxa/'+id+'?locale=zh-CN',signal),taxon=raw.results[0];
-  if(!taxon||String(taxon.id)!==id)throw Error('未找到这个物种。');
-  if(!taxon.ancestors?.some(a=>a.id===1)||!['species','subspecies'].includes(taxon.rank))throw Error('请选择动物物种条目。');
+  if(!/^[1-9]\d{0,9}$/.test(id))throw Error('Invalid species ID.');
+  const raw=await inat('taxa/'+id+'?locale=en-US',signal),taxon=raw.results[0];
+  if(!taxon||String(taxon.id)!==id)throw Error('Species not found.');
+  if(!taxon.ancestors?.some(a=>a.id===1)||!['species','subspecies'].includes(taxon.rank))throw Error('Please choose an animal species.');
   return normalize(taxon);
  }
  window.InatClient={nearby,search,detail};

@@ -1,17 +1,17 @@
 (() => {
  'use strict';
  const $=id=>document.getElementById(id),node=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
- const places={tongji:{lat:31.284419,lng:121.502065,name:'上海 · 同济大学四平路校区附近'},hongkong:{lat:22.49,lng:114.04,name:'香港 · 米埔湿地'},amazon:{lat:-3.1,lng:-60.02,name:'亚马孙 · 马瑙斯'},serengeti:{lat:-2.33,lng:34.83,name:'塞伦盖蒂'},borneo:{lat:5.87,lng:117.95,name:'婆罗洲 · 山打根'},reef:{lat:-16.5,lng:145.8,name:'大堡礁'}};
+ const places={tongji:{lat:31.284419,lng:121.502065,name:'Shanghai · Tongji University, Siping Campus'},hongkong:{lat:22.49,lng:114.04,name:'Hong Kong · Mai Po Wetlands'},amazon:{lat:-3.1,lng:-60.02,name:'Amazon · Manaus'},serengeti:{lat:-2.33,lng:34.83,name:'Serengeti'},borneo:{lat:5.87,lng:117.95,name:'Borneo · Sandakan'},reef:{lat:-16.5,lng:145.8,name:'Great Barrier Reef'}};
  const params=new URLSearchParams(location.search),read=(key,lo,hi,fallback)=>{const raw=params.get(key),n=Number(raw);return raw!==null&&raw.trim()!==''&&Number.isFinite(n)&&n>=lo&&n<=hi?n:fallback;};
  let selected={lat:read('lat',-90,90,places.tongji.lat),lng:read('lng',-180,180,places.tongji.lng)},radius=read('radius',2,200,25),page=1,version=0,abort;
  if(![2,5,10,25,50,200].includes(radius))radius=25;
- let label=params.has('lat')?'正在识别地点…':places.tongji.name,placeVersion=0,placeData;
+ let label=params.has('lat')?'Identifying location…':places.tongji.name,placeVersion=0,placeData;
  const fmt=(lat,lng,digits=3)=>`${Math.abs(lat).toFixed(digits)}°${lat<0?'S':'N'}, ${Math.abs(lng).toFixed(digits)}°${lng<0?'W':'E'}`;
  function resolvePlace(point){
   const own=++placeVersion;
-  label='正在识别地点…';$('location-title').textContent=label;
+  label='Identifying location…';$('location-title').textContent=label;
   placeData??=fetch('assets/place-names.json').then(response=>{if(!response.ok)throw Error('Place names unavailable');return response.json();}).then(data=>data.cities);
-  placeData.then(cities=>{if(own!==placeVersion)return;label=window.PlaceNames.label(point,cities,'zh-CN',Object.values(places))||fmt(point.lat,point.lng,2);$('location-title').textContent=label;}).catch(()=>{if(own!==placeVersion)return;label=fmt(point.lat,point.lng,2);$('location-title').textContent=label;});
+  placeData.then(cities=>{if(own!==placeVersion)return;label=window.PlaceNames.label(point,cities,'en-US',Object.values(places))||fmt(point.lat,point.lng,2);$('location-title').textContent=label;}).catch(()=>{if(own!==placeVersion)return;label=fmt(point.lat,point.lng,2);$('location-title').textContent=label;});
  }
  function updateLocation(){
   $('coordinates').textContent=fmt(selected.lat,selected.lng);$('location-title').textContent=label;
@@ -23,21 +23,21 @@
  function card(t){
   const article=node('article',undefined,'species-card'),link=node('a'),cover=node('div',undefined,'species-image');
   link.href='research.html#taxon='+t.id;
-  link.setAttribute('aria-label',(t.commonName||t.name)+'：探索视觉');
+  link.setAttribute('aria-label',(t.commonName||t.name)+'：Explore vision');
   const fallback=()=>{cover.replaceChildren(node('span',t.name.split(' ').map(s=>s[0]).slice(0,2).join(''),'no-image'));};
   fallback();
-  link.append(cover,node('h3',t.commonName||t.name),node('p',t.name,'latin'),node('p',`${t.localCount.toLocaleString('zh-CN')} 条附近记录`,'count'));article.append(link);
+  link.append(cover,node('h3',t.commonName||t.name),node('p',t.name,'latin'),node('p',`${t.localCount.toLocaleString('en-US')}  nearby observations`,'count'));article.append(link);
   const credit=node('div',undefined,'credit');article.append(credit);
   window.SpeciesPhotos.mount({taxon:t,cover,credit});
   return article;
  }
  async function load(){
-  const own=++version;abort?.abort();abort=new AbortController();$('species-list').setAttribute('aria-busy','true');$('species-list').replaceChildren(...Array.from({length:9},()=>node('div',undefined,'loading-tile')));$('empty').hidden=true;$('record-status').textContent=`正在查询 ${radius} km 范围内的记录…`;$('previous').disabled=true;$('next').disabled=true;
+  const own=++version;abort?.abort();abort=new AbortController();$('species-list').setAttribute('aria-busy','true');$('species-list').replaceChildren(...Array.from({length:9},()=>node('div',undefined,'loading-tile')));$('empty').hidden=true;$('record-status').textContent=`Searching within ${radius} km  for observations…`;$('previous').disabled=true;$('next').disabled=true;
   try{
    const data=await window.ApiClient.request('/api/nearby?'+new URLSearchParams({...selected,radius,page}),{signal:abort.signal});if(own!==version)return;
-   $('species-list').replaceChildren(...data.results.map(card));$('record-status').replaceChildren(node('strong',data.total.toLocaleString('zh-CN')),document.createTextNode(` 种动物有记录 · ${data.stale?'旧缓存':data.cached?'近期缓存':'在线更新'}`));$('page-number').textContent=String(page).padStart(2,'0');$('previous').disabled=page<=1;$('next').disabled=page*24>=data.total||page>=100;
-   if(!data.results.length){$('empty').hidden=false;$('empty-title').textContent='这里还没有找到动物记录';$('empty-description').textContent='试试扩大范围，或在地球仪上换一个地点。';}
-  }catch(error){if(own!==version||error.name==='AbortError')return;$('species-list').replaceChildren();$('record-status').textContent='查询未完成';$('empty').hidden=false;$('empty-title').textContent='暂时无法读取记录';$('empty-description').textContent=error.message;$('previous').disabled=page<=1;}
+   $('species-list').replaceChildren(...data.results.map(card));$('record-status').replaceChildren(node('strong',data.total.toLocaleString('en-US')),document.createTextNode(`  animal species recorded · ${data.stale?'Older cache':data.cached?'Recent cache':'Live data'}`));$('page-number').textContent=String(page).padStart(2,'0');$('previous').disabled=page<=1;$('next').disabled=page*24>=data.total||page>=100;
+   if(!data.results.length){$('empty').hidden=false;$('empty-title').textContent='No animal observations found here';$('empty-description').textContent='Try a larger radius or choose another place on the globe.';}
+  }catch(error){if(own!==version||error.name==='AbortError')return;$('species-list').replaceChildren();$('record-status').textContent='Search incomplete';$('empty').hidden=false;$('empty-title').textContent='Observations are temporarily unavailable';$('empty-description').textContent=error.message;$('previous').disabled=page<=1;}
   finally{if(own===version)$('species-list').setAttribute('aria-busy','false');}
  }
  // Orthographic projection renders only the near hemisphere; picking uses its inverse.
@@ -69,25 +69,25 @@
   ctx.fillStyle='#62664d';ctx.font='10px monospace';ctx.textAlign='center';ctx.fillText('N',c,c-scale-27);ctx.fillText('S',c,c+scale+34);$('view-coordinates').textContent=fmt(center[1],center[0],1);
  }
  function pick(x,y){if(!projection||Math.hypot(x-width/2,y-width/2)>scale)return;projection.rotate(rotation);const [lng,lat]=projection.invert([x,y]);if(Number.isFinite(lng)&&Number.isFinite(lat))select({lat,lng},null,false);}
- function select(point,name,recenter=true){selected={lat:point.lat,lng:point.lng};label=name||'正在识别地点…';page=1;if(recenter)rotation=[-selected.lng,-selected.lat,0];updateLocation();if(name)placeVersion++;else resolvePlace(selected);schedule();load();}
+ function select(point,name,recenter=true){selected={lat:point.lat,lng:point.lng};label=name||'Identifying location…';page=1;if(recenter)rotation=[-selected.lng,-selected.lat,0];updateLocation();if(name)placeVersion++;else resolvePlace(selected);schedule();load();}
  const xy=e=>{const r=canvas.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];};
  canvas.addEventListener('pointerdown',e=>{if(e.button!==0||pointer||!land)return;const [x,y]=xy(e);if(Math.hypot(x-width/2,y-width/2)>scale)return;pointer={id:e.pointerId,x,y,rotation:[...rotation],dragged:false};canvas.setPointerCapture(e.pointerId);canvas.classList.add('dragging');});
  canvas.addEventListener('pointermove',e=>{if(!pointer||e.pointerId!==pointer.id)return;const [x,y]=xy(e),dx=x-pointer.x,dy=y-pointer.y;if(Math.hypot(dx,dy)>5)pointer.dragged=true;if(pointer.dragged){const sensitivity=90/scale;rotation=[pointer.rotation[0]+dx*sensitivity,Math.max(-89.5,Math.min(89.5,pointer.rotation[1]-dy*sensitivity)),0];schedule();}});
  canvas.addEventListener('pointerup',e=>{if(!pointer||e.pointerId!==pointer.id)return;const click=!pointer.dragged;pointer=null;canvas.classList.remove('dragging');if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);if(click)pick(...xy(e));});
  const cancel=()=>{pointer=null;canvas.classList.remove('dragging');};canvas.addEventListener('pointercancel',cancel);canvas.addEventListener('lostpointercapture',cancel);
  canvas.addEventListener('keydown',e=>{if(!land)return;const moves={ArrowLeft:[-8,0],ArrowRight:[8,0],ArrowUp:[0,8],ArrowDown:[0,-8]};if(moves[e.key]){e.preventDefault();rotation[0]+=moves[e.key][0];rotation[1]=Math.max(-89.5,Math.min(89.5,rotation[1]+moves[e.key][1]));schedule();}else if(e.key==='Enter'||e.key===' '){e.preventDefault();pick(width/2,width/2);}});
- $('coordinate-form').addEventListener('submit',e=>{e.preventDefault();const lat=Number($('latitude').value),lng=Number($('longitude').value);if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180){$('form-error').hidden=false;$('form-error').textContent='纬度应为 -90 至 90，经度应为 -180 至 180。';return;}$('form-error').hidden=true;select({lat,lng});});
+ $('coordinate-form').addEventListener('submit',e=>{e.preventDefault();const lat=Number($('latitude').value),lng=Number($('longitude').value);if(!Number.isFinite(lat)||!Number.isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180){$('form-error').hidden=false;$('form-error').textContent='Latitude must be between -90 and 90; longitude between -180 and 180.';return;}$('form-error').hidden=true;select({lat,lng});});
  document.querySelectorAll('[data-place]').forEach(b=>b.addEventListener('click',()=>{const p=places[b.dataset.place];select(p,p.name);}));
  document.querySelectorAll('[data-radius]').forEach(b=>b.addEventListener('click',()=>{radius=Number(b.dataset.radius);page=1;updateLocation();schedule();load();}));
  $('recenter').addEventListener('click',()=>{rotation=[-selected.lng,-selected.lat,0];schedule();});$('retry').addEventListener('click',load);
  $('previous').addEventListener('click',()=>{if(page>1){page--;load();}});$('next').addEventListener('click',()=>{page++;load();});
- $('copy-view').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.href);$('copy-view').textContent='链接已复制 ✓';}catch{$('copy-view').textContent='请复制浏览器地址栏中的链接';}setTimeout(()=>$('copy-view').textContent='复制这个地点 ↗',3500);});
+ $('copy-view').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.href);$('copy-view').textContent='Link copied ✓';}catch{$('copy-view').textContent='Copy the link from your address bar';}setTimeout(()=>$('copy-view').textContent='Copy this location ↗',3500);});
  async function initGlobe(){try{
-  if(!window.d3||!window.topojson||!ctx)throw Error('地图组件未能加载，请刷新。');
+  if(!window.d3||!window.topojson||!ctx)throw Error('The map component could not load. Refresh to try again.');
   projection=d3.geoOrthographic().rotate(rotation).clipAngle(90).precision(.4);path=d3.geoPath(projection,ctx);
-  const response=await fetch('assets/world-land.json');if(!response.ok)throw Error('地理轮廓加载失败，请刷新。');const topology=await response.json();land=topojson.feature(topology,topology.objects.land);
+  const response=await fetch('assets/world-land.json');if(!response.ok)throw Error('The map outlines could not load. Refresh to try again.');const topology=await response.json();land=topojson.feature(topology,topology.objects.land);
   $('globe-loading').hidden=true;new ResizeObserver(resize).observe(canvas);resize();
-  try{const density=await fetch('assets/occurrence-density.json');if(!density.ok)throw Error('density');const data=await density.json();if(data.taxonKey!==1)throw Error('density taxon');densityPoints=data.points.map(([lng,lat,count])=>{const a=lng*Math.PI/180,b=lat*Math.PI/180;return [Math.cos(b)*Math.cos(a),Math.cos(b)*Math.sin(a),Math.sin(b),Math.min(1,Math.log10(1+count)/5)];});canvas.dataset.densityCells=String(densityPoints.length);document.querySelector('.map-note').textContent=`GBIF 动物出现记录 · ${data.retrieved.slice(0,10)} 快照 · 点越深表示网格内记录越多（对数色阶）。记录密度受采样影响，不等于物种丰富度；左侧物种来自 iNaturalist。`;schedule();}catch{document.querySelector('.map-note').textContent='记录密度暂时无法加载，当前仅显示地理底图。选点查询仍可使用。';}
- }catch(error){$('globe-loading').textContent=error.message+' 仍可使用上方经纬度选点。';}}
+  try{const density=await fetch('assets/occurrence-density.json');if(!density.ok)throw Error('density');const data=await density.json();if(data.taxonKey!==1)throw Error('density taxon');densityPoints=data.points.map(([lng,lat,count])=>{const a=lng*Math.PI/180,b=lat*Math.PI/180;return [Math.cos(b)*Math.cos(a),Math.cos(b)*Math.sin(a),Math.sin(b),Math.min(1,Math.log10(1+count)/5)];});canvas.dataset.densityCells=String(densityPoints.length);document.querySelector('.map-note').textContent=`GBIF animal occurrence records · ${data.retrieved.slice(0,10)}  snapshot · Darker cells indicate more records on a logarithmic scale. Sampling affects record density; it is not species richness. Species at left come from iNaturalist.`;schedule();}catch{document.querySelector('.map-note').textContent='Record density is unavailable. Only the base map is shown; you can still select locations.';}
+ }catch(error){$('globe-loading').textContent=error.message+' You can still select a location using the coordinate form above.';}}
  updateLocation();if(params.has('lat'))resolvePlace(selected);initGlobe();load();
 })();

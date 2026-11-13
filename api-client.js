@@ -18,12 +18,12 @@
   if(url.startsWith('/api/taxa?'))return window.InatClient.search(new URLSearchParams(url.split('?')[1]),options.signal);
   if(/^\/api\/taxa\/\d+$/.test(url))return window.InatClient.detail(url.split('/').pop(),options.signal);
   if(url==='/api/settings'){
-   let input;try{input=JSON.parse(options.body||'{}');}catch{throw Error('设置格式无效');}
-   if(input.researchModel!==undefined){if(!/^[a-z][a-z0-9._-]{1,79}$/.test(input.researchModel))throw Error('研究模型名称无效');state.researchModel=input.researchModel;}
-   if(input.imageModel!==undefined){if(!/^[a-z][a-z0-9._-]{1,79}$/.test(input.imageModel))throw Error('图像模型名称无效');state.imageModel=input.imageModel;}
-   if(input.apiKey){if(!/^sk-[A-Za-z0-9_-]{12,509}$/.test(input.apiKey))throw Error('OpenAI API Key 格式无效');state.openaiKey=input.apiKey;}
-   if(input.deepseekApiKey){if(!/^[A-Za-z0-9_-]{12,512}$/.test(input.deepseekApiKey))throw Error('DeepSeek API Key 格式无效');state.deepseekKey=input.deepseekApiKey;}
-   try{sessionStorage.setItem(storageKey,JSON.stringify(state));}catch{throw Error('浏览器无法保存本标签页的设置');}
+   let input;try{input=JSON.parse(options.body||'{}');}catch{throw Error('Invalid settings');}
+   if(input.researchModel!==undefined){if(!/^[a-z][a-z0-9._-]{1,79}$/.test(input.researchModel))throw Error('Invalid research model name');state.researchModel=input.researchModel;}
+   if(input.imageModel!==undefined){if(!/^[a-z][a-z0-9._-]{1,79}$/.test(input.imageModel))throw Error('Invalid image model name');state.imageModel=input.imageModel;}
+   if(input.apiKey){if(!/^sk-[A-Za-z0-9_-]{12,509}$/.test(input.apiKey))throw Error('OpenAI API Key Invalid format');state.openaiKey=input.apiKey;}
+   if(input.deepseekApiKey){if(!/^[A-Za-z0-9_-]{12,512}$/.test(input.deepseekApiKey))throw Error('DeepSeek API Key Invalid format');state.deepseekKey=input.deepseekApiKey;}
+   try{sessionStorage.setItem(storageKey,JSON.stringify(state));}catch{throw Error('This browser could not save settings for this tab');}
    return configuration();
   }
   const headers={'Content-Type':'application/json',...options.headers};
@@ -31,19 +31,19 @@
    let model=state.researchModel;
    if(url==='/api/world')try{model=JSON.parse(options.body).research?.model||model;}catch{}
    const key=model.startsWith('deepseek-')?state.deepseekKey:state.openaiKey;
-   if(!key)throw Error('请先在设置中填写当前研究模型对应的 API Key');
+   if(!key)throw Error('Enter an API key for the selected research model in Settings first');
    headers['X-Research-Key']=key;headers['X-Research-Model']=model;
   }
   if(url==='/api/generate'){
-   if(!state.openaiKey)throw Error('请先在设置中填写 OpenAI API Key');
+   if(!state.openaiKey)throw Error('Enter your OpenAI API key in Settings first');
    headers['X-Image-Key']=state.openaiKey;headers['X-Image-Model']=state.imageModel;
   }
   const response=await fetch(new URL(url,backendOrigin).href,{...options,headers});
   if(!(response.headers.get('content-type')||'').includes('application/json')){
-   const error=new Error('当前页面没有连接本站后端，请使用完整网站地址打开。');error.code='BACKEND_NOT_CONNECTED';throw error;
+   const error=new Error('The backend is unavailable. Open the full website to continue.');error.code='BACKEND_NOT_CONNECTED';throw error;
   }
-  let body;try{body=await response.json();}catch{throw Error('服务返回的数据不完整，请稍后重试。');}
-  if(!response.ok)throw Error(body.error||'请求失败，请稍后重试');
+  let body;try{body=await response.json();}catch{throw Error('The service returned incomplete data. Please try again.');}
+  if(!response.ok)throw Error(body.error||'Request failed. Please try again');
   return body;
  }
  window.ApiClient={request};
