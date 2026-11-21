@@ -12,7 +12,7 @@ function rankMatches(results,query){
  .sort((a,b)=>a.score-b.score||a.index-b.index).map(item=>item.taxon);
 }
 const fail=(message,status=400)=>Object.assign(new Error(message),{status});
-function taxonId(value){const id=String(value);if(!/^[1-9]\d{0,9}$/.test(id))throw fail('无效的物种编号');return id;}
+function taxonId(value){const id=String(value);if(!/^[1-9]\d{0,9}$/.test(id))throw fail('Invalid species ID');return id;}
 function safePhoto(photo){
   if(!photo||!['cc0','cc-by','cc-by-sa'].includes(photo.license_code))return null;
   try{const url=new URL(photo.medium_url||photo.url);if(url.protocol!=='https:'||!['inaturalist-open-data.s3.amazonaws.com','static.inaturalist.org'].includes(url.hostname))return null;return {url:url.href,attribution:photo.attribution||'',license:photo.license_code,source:`https://www.inaturalist.org/photos/${photo.id}`};}catch{return null;}
@@ -24,12 +24,12 @@ function createClient({fetchImpl=fetch,cacheDir=path.join(__dirname,'.cache','ca
   const key=crypto.createHash('sha256').update(endpoint).digest('hex');let cached=memory.get(key);
   if(!cached)try{cached=JSON.parse(fs.readFileSync(path.join(cacheDir,key+'.json'),'utf8'));}catch{}
   if(cached&&now()-cached.at<ttl)return {...cached.data,cached:true,fetchedAt:new Date(cached.at).toISOString()};
-  if(pending.has(key))return pending.get(key);if(pending.size>=24)throw fail('请求较多，请稍后再试',429);
+  if(pending.has(key))return pending.get(key);if(pending.size>=24)throw fail('Too many requests. Please try again later',429);
   const task=queue.then(async()=>{
-   if(next>now())await new Promise(r=>setTimeout(r,next-now()));if(now()<blocked)throw fail('iNaturalist 正在限流，请稍后重试',503);next=now()+spacing;
+   if(next>now())await new Promise(r=>setTimeout(r,next-now()));if(now()<blocked)throw fail('iNaturalist is rate limiting requests. Please try again later',503);next=now()+spacing;
    const res=await fetchImpl('https://api.inaturalist.org/v1/'+endpoint,{headers:{Accept:'application/json','User-Agent':'SeeThroughYourEyes/2.0'},signal:AbortSignal.timeout(15000)});
    if(res.status===429){const seconds=Number(res.headers.get('retry-after'));blocked=now()+Math.max(60000,Number.isFinite(seconds)?seconds*1000:60000);}
-   if(!res.ok)throw fail('iNaturalist 暂时无法连接',503);const raw=await res.json();if(!Array.isArray(raw.results))throw fail('物种数据格式异常',502);
+   if(!res.ok)throw fail('iNaturalist is temporarily unavailable',503);const raw=await res.json();if(!Array.isArray(raw.results))throw fail('Unexpected species data format',502);
    const data={results:raw.results.map(normalize),total:raw.total_results};const entry={at:now(),data};memory.set(key,entry);if(memory.size>200)memory.delete(memory.keys().next().value);
    try{fs.mkdirSync(cacheDir,{recursive:true});fs.writeFileSync(path.join(cacheDir,key+'.json'),JSON.stringify(entry));}catch{}
    return {...data,cached:false,fetchedAt:new Date(entry.at).toISOString()};
@@ -42,15 +42,15 @@ function createClient({fetchImpl=fetch,cacheDir=path.join(__dirname,'.cache','ca
   try{
    // List endpoints only include default_photo. Fetch missing covers in one
    // batch so normalize can inspect the full taxon_photos collection.
-   const details=await request('taxa/'+missing.map(t=>taxonId(t.id)).join(',')+'?locale=zh-CN&per_page=30',24*3600000);
+   const details=await request('taxa/'+missing.map(t=>taxonId(t.id)).join(',')+'?locale=en-US&per_page=30',24*3600000);
    const photos=new Map(details.results.filter(t=>t.photo).map(t=>[t.id,t.photo]));
    return {...data,results:data.results.map(t=>t.photo?t:{...t,photo:photos.get(t.id)||null})};
-  }catch{return {...data,photoWarning:'部分物种照片暂时无法读取，请稍后重试。'};}
+  }catch{return {...data,photoWarning:'Some species photos are unavailable. Please try again.'};}
  }
  return {
   async search({q='',group='',page=1}={}){
-   if(typeof q!=='string'||q.length>100||!GROUPS.has(group)||!Number.isInteger(page)||page<1||page>100)throw fail('搜索条件无效');
-   const params=new URLSearchParams({taxon_id:String(GROUP_IDS[group]||1),rank:'species',is_active:'true',locale:'zh-CN'});
+   if(typeof q!=='string'||q.length>100||!GROUPS.has(group)||!Number.isInteger(page)||page<1||page>100)throw fail('Invalid search parameters');
+   const params=new URLSearchParams({taxon_id:String(GROUP_IDS[group]||1),rank:'species',is_active:'true',locale:'en-US'});
    if(!q.trim()){
     params.set('per_page','24');params.set('page',String(page));params.set('order_by','observations_count');
     return withPhotos(await request('taxa?'+params,5*60000));
@@ -62,7 +62,7 @@ function createClient({fetchImpl=fetch,cacheDir=path.join(__dirname,'.cache','ca
    const candidates=rankMatches(data.results.filter(t=>!group||t.group===group),q);
    return withPhotos({...data,results:candidates.slice((page-1)*24,page*24),total:candidates.length,searchLimit:30,truncated:data.total>data.results.length});
   },
-  async detail(value){const id=taxonId(value),result=await request('taxa/'+id+'?locale=zh-CN',24*3600000),taxon=result.results[0];if(!taxon||String(taxon.id)!==id)throw fail('未找到这个物种',404);if(!taxon.ancestors.some(a=>a.id===1)||!['species','subspecies'].includes(taxon.rank))throw fail('请选择动物物种条目',400);return taxon;}
+  async detail(value){const id=taxonId(value),result=await request('taxa/'+id+'?locale=en-US',24*3600000),taxon=result.results[0];if(!taxon||String(taxon.id)!==id)throw fail('Species not found',404);if(!taxon.ancestors.some(a=>a.id===1)||!['species','subspecies'].includes(taxon.rank))throw fail('Choose an animal species',400);return taxon;}
  };
 }
 module.exports={createClient,normalize,safePhoto,taxonId,fail};

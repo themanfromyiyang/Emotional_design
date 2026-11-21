@@ -60,7 +60,7 @@ test('GPT answers the direct question, searches sources, then organizes a cited 
  const report={title:'Testus example 的视觉世界',summary:'宽阔的视野',visionSummary:compactSummary,claims:[{aspect:'视野',explanation:'宽阔',measuredSpecies:'Testus example',level:'direct',sourceIds:['S1'],visualInstruction:''}],firstPerson:['可能看到两侧的环境'],simulationGuide:[{dimension:'视野',method:'展示更宽的场景',sourceIds:['S1']}],habitat:{biome:'forest',description:'只有近亲的森林描述',measuredSpecies:'Testus cousin',level:'genus',sourceIds:['S1']},fieldOfView:{horizontalDegrees:220,measuredSpecies:'Testus example',level:'direct',sourceIds:['S1'],explanation:'直接测量'},worldAppearance:null,visualStreak:null,unknowns:['精确主观视觉未知']};
  const calls=[];const fetchImpl=async(url,options)=>{assert.match(url,/\/responses$/);const body=JSON.parse(options.body);calls.push(body);return {ok:true,json:async()=>calls.length===1?{status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:answer,annotations:[{type:'url_citation',url:'https://example.org/paper',title:'Visual study',start_index:0}]}]}]}:{status:'completed',output:[{type:'message',role:'assistant',content:[{type:'output_text',text:JSON.stringify(report)}]}]}};};
  const result=await synthesize({...animal,commonName:'测试动物'},{key:'test-key',fetchImpl});
- assert.equal(calls.length,2);assert.equal(calls[0].input,'测试动物眼中的世界是怎么样的？');assert.deepEqual(calls[0].tools,[{type:'web_search'}]);assert.equal(calls[0].tool_choice,'required');assert.equal(calls[1].text.format.type,'json_schema');assert.equal(result.sources[0].url,'https://example.org/paper');assert.equal(result.report.claims[0].sourceIds[0],'S1');assert.equal(result.report.habitat,null);
+ assert.equal(calls.length,2);assert.equal(calls[0].input,'测试动物 sees the world: describe its visual experience.');assert.deepEqual(calls[0].tools,[{type:'web_search'}]);assert.equal(calls[0].tool_choice,'required');assert.equal(calls[1].text.format.type,'json_schema');assert.equal(result.sources[0].url,'https://example.org/paper');assert.equal(result.report.claims[0].sourceIds[0],'S1');assert.equal(result.report.habitat,null);
  assert.throws(()=>validateReport({...report,claims:[{...report.claims[0],sourceIds:['S9']}]},result.sources),{status:502});
  assert.throws(()=>validateReport({...report,visionSummary:{...compactSummary,color:{text:'颜色',sourceIds:['S9']}}},result.sources),{status:502});
 });
@@ -136,7 +136,7 @@ test('research route does not plan an environment until the world button request
  const world=await fetch(base+'/api/world',{method:'POST',headers:{'Content-Type':'application/json',Origin:base},body:'{"researchId":"test"}'});assert.equal(world.status,200);assert.equal((await world.json()).plan.biome,'grassland');assert.equal(worldCalls,1);
  assert.equal((await fetch(base+'/api/generate',{method:'POST',headers:{'Content-Type':'application/json',Origin:base},body:'{"researchId":"test","image":"test"}'})).status,200);
  assert.match(fs.readFileSync(path.join(__dirname,'app.js'),'utf8'),/\/api\/research/);
- assert.match(fs.readFileSync(path.join(__dirname,'research.html'),'utf8'),/id="research-again"[^>]*>生成视觉报告/);
+ assert.match(fs.readFileSync(path.join(__dirname,'research.html'),'utf8'),/id="research-again"[^>]*>Generate vision report/);
  const worldScript=fs.readFileSync(path.join(__dirname,'world-simulation.js'),'utf8');assert.match(worldScript,/world-generate'\)\.addEventListener\('click'/);assert.doesNotMatch(worldScript.split("$('world-generate').addEventListener('click'")[0].split("window.addEventListener('world-research-update'")[1],/buildEnvironment\(/);
  const page=fs.readFileSync(path.join(__dirname,'research.html'),'utf8');assert.match(page,/<details id="research-claims" class="visual-details">/);assert.match(page,/<details class="image-panel">/);assert.match(page,/id="research-habitat"/);assert.match(page,/id="research-vision"/);
 });
@@ -168,7 +168,7 @@ test('local settings save the key without exposing it',async t=>{
 test('static preview HTML response becomes a helpful backend error, never a JSON SyntaxError',async()=>{
  const context={fetch:async()=>({ok:false,headers:{get:()=> 'text/html'},json:()=>{throw new Error('should not parse HTML')}})};
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'api-client.js'),'utf8'),context);
- await assert.rejects(context.ApiClient.request('/api/taxa?q=wolf'),error=>error.code==='BACKEND_NOT_CONNECTED'&&error.message.includes('完整网站'));
+ await assert.rejects(context.ApiClient.request('/api/taxa?q=wolf'),error=>error.code==='BACKEND_NOT_CONNECTED'&&error.message.includes('full website'));
 });
 test('IDE index redirects to verified live application and retains search',async()=>{
  let target;const context={window:{},location:{protocol:'http:',hostname:'localhost',port:'63342',search:'?q=wolf&group=Mammalia&_ijt=private',hash:'#taxon=123',replace:url=>target=url},URL,URLSearchParams,AbortSignal,fetch:async()=>({ok:true,headers:{get:()=> 'application/json'},json:async()=>({service:'see-through-your-eyes'})})};

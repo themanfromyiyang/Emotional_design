@@ -26,7 +26,7 @@
  async function alternatives(taxon){
   return memo('inat:'+taxon.id,async()=>{
    if(!/^[1-9]\d*$/.test(String(taxon.id)))return [];
-   const data=await json('https://api.inaturalist.org/v1/taxa/'+taxon.id,{locale:'zh-CN'});
+   const data=await json('https://api.inaturalist.org/v1/taxa/'+taxon.id,{locale:'en-US'});
    const t=data.results?.find(t=>String(t.id)===String(taxon.id)&&key(t.name)===key(taxon.name));
    return t?[t.default_photo,...(t.taxon_photos||[]).map(p=>p.photo)].map(inatPhoto).filter(Boolean):[];
   });
@@ -46,7 +46,7 @@
     const license=meta?.LicenseShortName?.value||'';
     if(!/^(CC0(?: 1\.0)?|Public domain|CC BY(?:-SA)? \d\.\d)$/i.test(license)||!/^image\/(jpeg|png|webp)$/.test(info?.mime||''))return [];
     const url=validURL(info.thumburl,['upload.wikimedia.org','thumb.wikimedia.org']),source=validURL(info.descriptionurl,['commons.wikimedia.org']);
-    const attribution=new DOMParser().parseFromString(meta?.Artist?.value||meta?.Credit?.value||'作者见原页','text/html').body.textContent.trim().slice(0,300);
+    const attribution=new DOMParser().parseFromString(meta?.Artist?.value||meta?.Credit?.value||'See source for author','text/html').body.textContent.trim().slice(0,300);
     return url&&source?[{url,source,license,attribution}]:[];
    });
   });
@@ -65,13 +65,13 @@
   }
   async function run(){
    if(!alive())return;
-   creditText('正在查找开放许可照片…');
+   creditText('Finding openly licensed photos…');
    if(await show(initial))return;
    for(const provider of [alternatives,commons]){
     if(!alive())return;
     try{for(const photo of await provider(taxon)){if(await show(photo))return;}}catch{/* A failed source must not hide the species or block another source. */}
    }
-   if(alive())creditText('暂未找到可加载的开放许可照片');
+   if(alive())creditText('No loadable openly licensed photo found yet');
   }
   // Cards are built before insertion; observe after the caller mounts its list.
   setTimeout(()=>{

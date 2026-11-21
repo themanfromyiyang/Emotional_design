@@ -8,7 +8,7 @@
    for(let c=0;c<3;c++){const value=pixels[i+c];sums[c]+=value;squares[c]+=value*value;}
    chroma+=(Math.abs(pixels[i]-pixels[i+1])+Math.abs(pixels[i+1]-pixels[i+2]))/2;
   }
-  if(!samples)throw new Error('图片没有可处理的像素');
+  if(!samples)throw new Error('The image has no processable pixels');
   const mean=sums.map(sum=>sum/samples),spread=squares.map((sum,c)=>Math.sqrt(Math.max(0,sum/samples-mean[c]*mean[c])));
   return {mean,spread,chroma:chroma/samples};
  }
